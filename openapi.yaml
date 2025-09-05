@@ -1,0 +1,243 @@
+openapi: 3.0.0
+info:
+  title: Amplify Backend API
+  description: Backend service for the Amplify application
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Version 1 API
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      operationId: health_check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: amplify-backend
+  /enhance/story:
+    post:
+      summary: Enhance a story
+      operationId: enhance_story
+      tags:
+        - Enhancement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnhancementRequest'
+      responses:
+        '200':
+          description: Enhanced story with insights
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnhancementResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /enhance/history:
+    get:
+      summary: Get enhancement history
+      operationId: get_enhancement_history
+      tags:
+        - Enhancement
+      responses:
+        '200':
+          description: List of previous enhancements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EnhancementResponse'
+  /audio/generate:
+    post:
+      summary: Generate audio from text
+      operationId: generate_audio
+      tags:
+        - Audio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AudioGenerationRequest'
+      responses:
+        '200':
+          description: Audio generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_url:
+                    type: string
+                    format: uri
+                  duration:
+                    type: number
+  /audio/voices:
+    get:
+      summary: Get available voices
+      operationId: get_voices
+      tags:
+        - Audio
+      responses:
+        '200':
+          description: List of available voices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoicesResponse'
+  /auth/login:
+    post:
+      summary: User login
+      operationId: login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    EnhancementRequest:
+      type: object
+      required:
+        - story_text
+      properties:
+        story_text:
+          type: string
+          description: The story text to enhance
+        enhancement_type:
+          type: string
+          enum: [plot, character, dialogue, setting]
+          description: Type of enhancement requested
+    
+    EnhancementResponse:
+      type: object
+      properties:
+        enhanced_story:
+          type: string
+          description: The enhanced story text
+        insights:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        enhancement_id:
+          type: string
+          description: Unique identifier for this enhancement
+        created_at:
+          type: string
+          format: date-time
+    
+    Insight:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Type of insight
+        description:
+          type: string
+          description: Detailed description of the insight
+        suggestion:
+          type: string
+          description: Suggested improvement
+    
+    AudioGenerationRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Text to convert to audio
+        voice_id:
+          type: string
+          description: Voice to use for generation
+        speed:
+          type: number
+          minimum: 0.5
+          maximum: 2.0
+          description: Speech speed multiplier
+    
+    VoicesResponse:
+      type: object
+      properties:
+        voices:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              language:
+                type: string
+              gender:
+                type: string
+    
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+    
+    Token:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+    
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+        error_code:
+          type: string
+          description: Machine-readable error code
