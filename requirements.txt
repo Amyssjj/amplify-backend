@@ -18,3 +18,5 @@ python-jose[cryptography]
 python-multipart
 requests
 uvicorn[standard]
+httpx
+pytest
