@@ -1,0 +1,54 @@
+amplify-backend/
+├── .replit                 # Replit-specific configuration for running the app.
+├── .gitignore              # Standard Python gitignore.
+├── main.py                 # The entry point of your application. Replit runs this file.
+├── openapi.yaml            # The API contract. The single source of truth.
+├── pyproject.toml          # Modern way to manage dependencies and project metadata.
+├── requirements.txt        # Simple dependency list, often used by Replit.
+├── README.md               # Documentation for the backend service.
+│
+├── app/                    # The main source code for your Python application.
+│   ├── __init__.py
+│   │
+│   ├── api/                # Contains all API endpoint routing logic (the "V" in MVC).
+│   │   └── v1/
+│   │       ├── __init__.py
+│   │       ├── router.py         # Gathers all v1 routes into a single APIRouter.
+│   │       │
+│   │       └── endpoints/
+│   │           ├── __init__.py
+│   │           ├── enhancement.py    # Routes for /enhance/story and /enhance/history.
+│   │           ├── audio.py          # Routes for /audio/generate and /audio/voices.
+│   │           ├── auth.py           # Route for /auth/login.
+│   │           └── health.py         # Routes for /health checks.
+│   │
+│   ├── schemas/            # Pydantic models for data validation and serialization (the "M" in MVC).
+│   │   ├── __init__.py
+│   │   ├── enhancement.py    # Schemas: EnhancementRequest, EnhancementResponse, Insight.
+│   │   ├── audio.py          # Schemas: AudioGenerationRequest, VoicesResponse.
+│   │   ├── auth.py           # Schemas: LoginRequest, Token.
+│   │   └── common.py         # Shared schemas like ErrorResponse.
+│   │
+│   ├── services/           # Contains all the business logic (the "C" or Controller logic).
+│   │   ├── __init__.py
+│   │   ├── enhancement_service.py # Core logic for analyzing stories, calling AI, etc.
+│   │   ├── gemini_service.py      # Specific code for interacting with the Gemini API.
+│   │   ├── tts_service.py         # Specific code for the Text-to-Speech API.
+│   │   └── database_service.py    # Logic to interact with ReplitDB or another database.
+│   │
+│   ├── core/               # Application-wide configuration and utilities.
+│   │   ├── __init__.py
+│   │   ├── config.py         # Pydantic settings for managing environment variables (API keys).
+│   │   ├── security.py       # Functions for JWT creation, validation, and password hashing.
+│   │   └── dependencies.py   # FastAPI dependencies (e.g., get_current_user).
+│   │
+│   └── tests/                # All tests for your application.
+│       ├── __init__.py
+│       ├── conftest.py         # Pytest fixtures (e.g., test client setup).
+│       │
+│       ├── api/                # Integration tests for the API endpoints.
+│       │   └── test_enhancement_api.py
+│       │
+│       └── services/           # Unit tests for the business logic.
+│           └── test_enhancement_service.py
+│
