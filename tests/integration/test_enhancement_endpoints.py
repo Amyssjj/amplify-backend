@@ -3,17 +3,33 @@ Integration tests for enhancement endpoints with database.
 """
 import pytest
 import json
+from unittest.mock import patch, AsyncMock
 from fastapi import status
 from app.models.enhancement import Enhancement, AudioStatusEnum
 from app.models.user import User
+from app.services.gemini_service import GeminiResponse
 
 
 @pytest.mark.integration
 class TestEnhancementEndpoints:
     """Integration tests for enhancement API endpoints."""
     
-    def test_create_enhancement_success(self, client, sample_enhancement_request, db_session):
+    @patch('app.api.v1.endpoints.enhancement.GeminiService')
+    def test_create_enhancement_success(self, mock_gemini_class, client, sample_enhancement_request, db_session):
         """Test successful enhancement creation."""
+        # Setup mock Gemini service
+        mock_gemini_instance = AsyncMock()
+        mock_gemini_class.return_value = mock_gemini_instance
+        
+        mock_response = GeminiResponse(
+            enhanced_transcript="Once upon a time in a mystical realm, there was a brave knight named Sir Gareth who embarked on a perilous quest to save the kingdom from an ancient curse.",
+            insights={
+                "plot": "Enhanced the quest structure with specific goals and conflicts",
+                "character": "Added depth and motivation to the knight protagonist"
+            }
+        )
+        mock_gemini_instance.enhance_story_with_photo.return_value = mock_response
+        
         response = client.post("/api/v1/enhancements", json=sample_enhancement_request)
         
         assert response.status_code == status.HTTP_200_OK
@@ -33,7 +49,8 @@ class TestEnhancementEndpoints:
         # Check insights structure
         assert isinstance(data["insights"], dict)
     
-    def test_create_enhancement_invalid_data(self, client):
+    @patch('app.api.v1.endpoints.enhancement.GeminiService')
+    def test_create_enhancement_invalid_data(self, mock_gemini_class, client):
         """Test enhancement creation with invalid data."""
         # Missing required fields
         response = client.post("/api/v1/enhancements", json={})
@@ -122,8 +139,19 @@ class TestEnhancementEndpoints:
         response = client.get("/api/v1/enhancements/invalid_id/audio")
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
-    def test_enhancement_endpoints_http_methods(self, client, sample_enhancement_request):
+    @patch('app.api.v1.endpoints.enhancement.GeminiService')
+    def test_enhancement_endpoints_http_methods(self, mock_gemini_class, client, sample_enhancement_request):
         """Test that endpoints only accept correct HTTP methods."""
+        # Setup mock Gemini service for POST test
+        mock_gemini_instance = AsyncMock()
+        mock_gemini_class.return_value = mock_gemini_instance
+        
+        mock_response = GeminiResponse(
+            enhanced_transcript="Enhanced story for HTTP methods test",
+            insights={"plot": "Good", "character": "Strong"}
+        )
+        mock_gemini_instance.enhance_story_with_photo.return_value = mock_response
+        
         # POST should work for creation
         response = client.post("/api/v1/enhancements", json=sample_enhancement_request)
         assert response.status_code == status.HTTP_200_OK
@@ -173,8 +201,22 @@ class TestEnhancementEndpoints:
 class TestEnhancementWorkflow:
     """Integration tests for complete enhancement workflow."""
     
-    def test_two_stage_enhancement_flow(self, client, sample_enhancement_request):
+    @patch('app.api.v1.endpoints.enhancement.GeminiService')
+    def test_two_stage_enhancement_flow(self, mock_gemini_class, client, sample_enhancement_request):
         """Test the complete two-stage enhancement flow."""
+        # Setup mock Gemini service
+        mock_gemini_instance = AsyncMock()
+        mock_gemini_class.return_value = mock_gemini_instance
+        
+        mock_response = GeminiResponse(
+            enhanced_transcript="Once upon a time in a mystical realm, there was a brave knight named Sir Gareth who embarked on a perilous quest to save the kingdom from an ancient curse.",
+            insights={
+                "plot": "Enhanced the quest structure with specific goals and conflicts",
+                "character": "Added depth and motivation to the knight protagonist"
+            }
+        )
+        mock_gemini_instance.enhance_story_with_photo.return_value = mock_response
+        
         # Stage 1: Create enhancement (text)
         response = client.post("/api/v1/enhancements", json=sample_enhancement_request)
         
@@ -198,8 +240,19 @@ class TestEnhancementWorkflow:
         assert "audio_format" in stage2_data
         assert stage2_data["audio_format"] == "mp3"
     
-    def test_enhancement_history_after_creation(self, client, sample_enhancement_request):
+    @patch('app.api.v1.endpoints.enhancement.GeminiService')
+    def test_enhancement_history_after_creation(self, mock_gemini_class, client, sample_enhancement_request):
         """Test that created enhancements appear in history."""
+        # Setup mock Gemini service
+        mock_gemini_instance = AsyncMock()
+        mock_gemini_class.return_value = mock_gemini_instance
+        
+        mock_response = GeminiResponse(
+            enhanced_transcript="Enhanced knight story with magical elements",
+            insights={"plot": "Improved", "character": "Developed"}
+        )
+        mock_gemini_instance.enhance_story_with_photo.return_value = mock_response
+        
         # Initially empty
         response = client.get("/api/v1/enhancements")
         initial_data = response.json()

@@ -2,8 +2,10 @@
 End-to-end tests for complete user workflows.
 """
 import pytest
+from unittest.mock import patch, AsyncMock
 from fastapi import status
 import time
+from app.services.gemini_service import GeminiResponse
 
 
 @pytest.mark.e2e

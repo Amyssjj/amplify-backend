@@ -2,8 +2,9 @@
 Enhancement endpoints matching OpenAPI specification.
 Two-stage flow: POST creates enhancement (text), GET retrieves audio.
 """
+import uuid
 from fastapi import APIRouter, HTTPException, Query, Path
-
+from app.services.gemini_service import GeminiService, GeminiError
 from app.schemas.enhancement import (
     EnhancementRequest, EnhancementTextResponse, 
     EnhancementAudioResponse, EnhancementHistoryResponse,
@@ -21,17 +22,34 @@ async def create_enhancement(request: EnhancementRequest):
     call GET /api/v1/enhancements/{id}/audio in the background to complete the flow.
     """
     try:
-        # TODO: Implement Gemini analysis logic
-        enhancement_id = "enh_placeholder123"  # TODO: Generate proper ID
+        # Generate unique enhancement ID
+        enhancement_id = f"enh_{uuid.uuid4().hex[:12]}"
+        
+        # Initialize Gemini service
+        gemini_service = GeminiService()
+        
+        # Enhance story with photo analysis
+        enhancement_result = await gemini_service.enhance_story_with_photo(
+            photo_base64=request.photo_base64,
+            transcript=request.transcript,
+            language=request.language
+        )
+        
+        # TODO: Save to database (will implement in next step)
         
         return EnhancementTextResponse(
             enhancement_id=enhancement_id,
-            enhanced_transcript=f"Enhanced version of: {request.transcript}",
-            insights={
-                "plot": "The story has good potential for development",
-                "character": "Main character needs more depth"
-            }
+            enhanced_transcript=enhancement_result.enhanced_transcript,
+            insights=enhancement_result.insights
         )
+    except GeminiError as e:
+        # Handle specific Gemini service errors
+        if "API key" in str(e):
+            raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+        elif "rate limit" in str(e).lower():
+            raise HTTPException(status_code=429, detail="Too many requests, please try again later")
+        else:
+            raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
