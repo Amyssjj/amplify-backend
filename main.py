@@ -1,12 +1,28 @@
 """
 Amplify Backend - Main Application Entry Point
 """
+import os
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+
+# Database initialization using lifespan
+@asynccontextmanager
+async def lifespan(app_instance):
+    """Initialize database on application startup."""
+    try:
+        from app.core.database import create_tables
+        create_tables()
+    except Exception as e:
+        print(f"⚠️  Database initialization warning: {e}")
+        # Don't fail startup if database is not available
+        pass
+    yield
+    # Cleanup (if needed)
 
 # Create FastAPI app instance
 app = FastAPI(
@@ -14,6 +30,7 @@ app = FastAPI(
     description="Backend service for the Amplify application",
     version="1.0.0",
     openapi_url="/api/v1/openapi.json",
+    lifespan=lifespan,
 )
 
 # Set up CORS
@@ -39,10 +56,13 @@ async def health_check():
     return {"status": "healthy", "service": "amplify-backend"}
 
 if __name__ == "__main__":
+    # Use port 8000 for local development (matches OpenAPI spec)
+    # Replit will override this with port 5000 via .replit configuration
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=5000,
+        port=port,
         reload=True,
         log_level="info"
     )
