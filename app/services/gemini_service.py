@@ -36,7 +36,7 @@ class GeminiService:
 
         # Configure Gemini
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-pro')
+        self.model = genai.GenerativeModel('models/gemini-2.5-pro')
 
         # Safety settings to allow creative content
         self.safety_settings = {
