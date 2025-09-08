@@ -1,8 +1,8 @@
 """
 Configuration settings for the Amplify Backend application.
 """
-from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 from typing import Optional
 
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     elevenlabs_api_key: Optional[str] = None
-    google_oauth_client_id: Optional[str] = None
+    google_client_id: Optional[str] = None  # Reads from GOOGLE_CLIENT_ID env var
     
     # TTS Configuration
     tts_provider: str = "openai"  # "openai", "elevenlabs", or "mock"
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     prompts_path: str = "app/prompts"
     prompts_hot_reload: bool = True  # Auto-set based on debug mode in production
     
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False
     )

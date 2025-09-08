@@ -127,7 +127,7 @@ class GoogleAuthService:
                 id_token,
                 key_data,
                 algorithms=["RS256"],
-                audience=settings.google_oauth_client_id,
+                audience=settings.google_client_id,
                 issuer="https://accounts.google.com"
             )
             
