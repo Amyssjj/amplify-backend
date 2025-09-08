@@ -21,8 +21,10 @@ class GeminiError(Exception):
 
 class GeminiResponse(BaseModel):
     """Response model for Gemini story enhancement."""
-    enhanced_transcript: str = Field(..., description="Enhanced version of the original story")
-    insights: Dict[str, str] = Field(..., description="Analysis insights about the enhancements made")
+    enhanced_transcript: str = Field(
+        ..., description="Enhanced version of the original story")
+    insights: Dict[str, str] = Field(
+        ..., description="Analysis insights about the enhancements made")
 
 
 class GeminiService:
@@ -32,21 +34,29 @@ class GeminiService:
         """Initialize Gemini service with API configuration."""
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
-            raise GeminiError("GEMINI_API_KEY environment variable is required")
+            raise GeminiError(
+                "GEMINI_API_KEY environment variable is required")
 
         # Configure Gemini
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('models/gemini-2.5-pro')
+        self.model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
 
         # Safety settings to allow creative content
         self.safety_settings = {
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_HARASSMENT:
+            HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH:
+            HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:
+            HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:
+            HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
         }
 
-    async def enhance_story_with_photo(self, photo_base64: str, transcript: str, language: str = "en") -> GeminiResponse:
+    async def enhance_story_with_photo(self,
+                                       photo_base64: str,
+                                       transcript: str,
+                                       language: str = "en") -> GeminiResponse:
         """
         Enhance a story transcript using photo analysis with Gemini Vision AI.
 
@@ -66,11 +76,9 @@ class GeminiService:
             self._validate_inputs(photo_base64, transcript, language)
 
             # Call Gemini API
-            response = await self._call_gemini_api(
-                photo_base64=photo_base64,
-                transcript=transcript,
-                language=language
-            )
+            response = await self._call_gemini_api(photo_base64=photo_base64,
+                                                   transcript=transcript,
+                                                   language=language)
 
             # Validate and return response
             return self._parse_response(response)
@@ -80,7 +88,8 @@ class GeminiService:
                 raise
             raise GeminiError(f"Gemini API error: {str(e)}")
 
-    def _validate_inputs(self, photo_base64: str, transcript: str, language: str) -> None:
+    def _validate_inputs(self, photo_base64: str, transcript: str,
+                         language: str) -> None:
         """Validate input parameters."""
         if not photo_base64 or not photo_base64.strip():
             raise GeminiError("Photo data is required")
@@ -93,25 +102,30 @@ class GeminiService:
 
         # Validate language code (ISO 639-1)
         valid_languages = {
-            'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ru', 'ar', 'hi'
+            'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ru', 'ar',
+            'hi'
         }
         if language not in valid_languages:
             raise GeminiError(f"Invalid language code: {language}")
 
-    async def _call_gemini_api(self, photo_base64: str, transcript: str, language: str) -> Dict[str, Any]:
+    async def _call_gemini_api(self, photo_base64: str, transcript: str,
+                               language: str) -> Dict[str, Any]:
         """Make the actual API call to Gemini."""
         try:
             # Convert base64 to PIL Image
             image_data = base64.b64decode(photo_base64)
             image = Image.open(io.BytesIO(image_data))
-            
+
             # Convert to RGB mode to ensure compatibility with Gemini API
             if image.mode in ('RGBA', 'LA', 'P'):
                 # Create white background for transparent images
                 background = Image.new('RGB', image.size, (255, 255, 255))
                 if image.mode == 'P':
                     image = image.convert('RGBA')
-                background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+                background.paste(
+                    image,
+                    mask=image.split()[-1] if image.mode in ('RGBA',
+                                                             'LA') else None)
                 image = background
             elif image.mode != 'RGB':
                 image = image.convert('RGB')
@@ -128,14 +142,14 @@ class GeminiService:
                     'top_p': 0.8,
                     'top_k': 40,
                     'max_output_tokens': 2048,
-                }
-            )
+                })
 
             # Parse JSON response
             response_text = response.text
 
             # Extract JSON from response (handle potential markdown formatting)
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL | re.MULTILINE)
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```',
+                                   response_text, re.DOTALL | re.MULTILINE)
             if json_match:
                 json_str = json_match.group(1)
             else:
@@ -172,10 +186,8 @@ class GeminiService:
         # Get the social prompt template from PromptManager
         try:
             prompt_template = prompt_manager.get_prompt("social")
-            return prompt_template.format(
-                transcript=transcript,
-                language_name=lang_name
-            )
+            return prompt_template.format(transcript=transcript,
+                                          language_name=lang_name)
         except Exception as e:
             # Fallback to error message if prompt loading fails
             raise GeminiError(f"Failed to load prompt template: {str(e)}")
@@ -186,14 +198,15 @@ class GeminiService:
 
         for field in required_fields:
             if field not in response:
-                raise GeminiError(f"Invalid response format: missing '{field}' field")
+                raise GeminiError(
+                    f"Invalid response format: missing '{field}' field")
 
         # Validate insights structure
         insights = response.get("insights", {})
         if not isinstance(insights, dict):
-            raise GeminiError("Invalid response format: 'insights' must be an object")
+            raise GeminiError(
+                "Invalid response format: 'insights' must be an object")
 
         return GeminiResponse(
             enhanced_transcript=response["enhanced_transcript"],
-            insights=insights
-        )
+            insights=insights)
