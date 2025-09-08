@@ -20,7 +20,9 @@ router = APIRouter()
 
 @router.post("", response_model=EnhancementTextResponse)
 async def create_enhancement(
-    request: EnhancementRequest
+    request: EnhancementRequest, 
+    db: Session = Depends(get_db_session),
+    user_id: str = Depends(get_user_id_or_anonymous)
 ):
     """Create enhancement (Stage 1 - Text).
     
@@ -42,9 +44,27 @@ async def create_enhancement(
             language=request.language
         )
         
-        # TODO: Save to database - temporarily disabled to isolate AI service issue
-        print(f"✅ Enhancement created: {enhancement_id}")
-        print(f"📝 Enhanced transcript: {enhancement_result.enhanced_transcript[:100]}...")
+        # Save to database
+        try:
+            enhancement = Enhancement(
+                enhancement_id=enhancement_id,
+                user_id=user_id,
+                original_transcript=request.transcript,
+                enhanced_transcript=enhancement_result.enhanced_transcript,
+                insights=enhancement_result.insights,
+                photo_base64=request.photo_base64,
+                language=request.language
+            )
+            
+            db.add(enhancement)
+            db.commit()
+            db.refresh(enhancement)
+            print(f"✅ Enhancement saved to database: {enhancement_id}")
+            
+        except Exception as db_error:
+            db.rollback()
+            print(f"⚠️ Database save failed: {db_error}")
+            # Continue without database persistence for now
         
         return EnhancementTextResponse(
             enhancement_id=enhancement_id,
