@@ -104,6 +104,17 @@ class GeminiService:
             # Convert base64 to PIL Image
             image_data = base64.b64decode(photo_base64)
             image = Image.open(io.BytesIO(image_data))
+            
+            # Convert to RGB mode to ensure compatibility with Gemini API
+            if image.mode in ('RGBA', 'LA', 'P'):
+                # Create white background for transparent images
+                background = Image.new('RGB', image.size, (255, 255, 255))
+                if image.mode == 'P':
+                    image = image.convert('RGBA')
+                background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+                image = background
+            elif image.mode != 'RGB':
+                image = image.convert('RGB')
 
             # Build prompt using PromptManager
             prompt = self._build_prompt(transcript, language)
