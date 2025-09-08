@@ -53,6 +53,7 @@ async def create_enhancement(
         )
     except GeminiError as e:
         # Handle specific Gemini service errors
+        print(f"❌ GeminiError: {e}")
         if "API key" in str(e):
             raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
         elif "rate limit" in str(e).lower():
@@ -61,6 +62,9 @@ async def create_enhancement(
             raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
     except Exception as e:
         print(f"❌ Enhancement error: {e}")
+        print(f"❌ Error type: {type(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("", response_model=EnhancementHistoryResponse)
