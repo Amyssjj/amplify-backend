@@ -22,6 +22,7 @@ class TestCompleteUserJourney:
         assert auth_response.status_code in [
             status.HTTP_200_OK,  # If placeholder auth succeeds
             status.HTTP_401_UNAUTHORIZED,  # If token verification fails
+            status.HTTP_422_UNPROCESSABLE_ENTITY,  # If invalid token format
             status.HTTP_500_INTERNAL_SERVER_ERROR  # If not fully implemented
         ]
         

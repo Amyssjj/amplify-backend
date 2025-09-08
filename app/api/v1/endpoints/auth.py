@@ -1,9 +1,12 @@
 """
 Authentication endpoints.
 """
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+from sqlalchemy.orm import Session
 
 from app.schemas.auth import LoginRequest, Token, GoogleAuthRequest, AuthResponse, UserProfile
+from app.services.google_auth_service import GoogleAuthService, GoogleAuthError
+from app.core.database import get_db_session
 
 router = APIRouter()
 
@@ -31,34 +34,51 @@ async def login(request: LoginRequest):
 
 
 @router.post("/google", response_model=AuthResponse)
-async def google_auth(request: GoogleAuthRequest):
+async def google_auth(request: GoogleAuthRequest, db: Session = Depends(get_db_session)):
     """Google OAuth authentication endpoint."""
     try:
-        # TODO: Implement Google ID token verification
-        # For now, accept any non-empty token as valid for testing
+        # Initialize Google Auth service
+        google_auth_service = GoogleAuthService()
         
-        if not request.id_token or len(request.id_token.strip()) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Invalid Google token"
-            )
+        # Verify the Google ID token
+        token_info = await google_auth_service.verify_id_token(request.id_token)
         
-        # Placeholder response - would normally verify token with Google
-        user_profile = UserProfile(
-            user_id="usr_google_test123",
-            email="test@google.com",
-            name="Test User",
-            picture="https://example.com/avatar.jpg"
-        )
+        # Get or create user in database
+        user = await google_auth_service.get_or_create_user(token_info, db)
+        
+        # Generate JWT token for the user
+        jwt_token = google_auth_service.generate_jwt_token(user)
+        
+        # Create user profile response
+        user_profile = google_auth_service.create_user_profile(user)
         
         return AuthResponse(
-            access_token="google-jwt-token-placeholder",
+            access_token=jwt_token,
             token_type="bearer",
-            expires_in=3600,
+            expires_in=3600,  # 1 hour (matches settings.access_token_expire_minutes * 60)
             user=user_profile
         )
         
+    except GoogleAuthError as e:
+        # Handle specific Google auth errors
+        if "Invalid token" in str(e) or "Token missing" in str(e) or "ID token is required" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid Google ID token"
+            )
+        elif "verification failed" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Google authentication failed"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service temporarily unavailable"
+            )
     except HTTPException:
+        # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Google auth error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

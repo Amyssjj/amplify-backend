@@ -112,10 +112,8 @@ class TestEnhancementEndpoints:
         """Test getting enhancement by ID when it doesn't exist."""
         response = client.get("/api/v1/enhancements/enh_nonexistent")
         
-        # Should return placeholder data for now (until database integration)
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data["enhancement_id"] == "enh_nonexistent"
+        # Should return 404 with database integration
+        assert response.status_code == status.HTTP_404_NOT_FOUND
     
     def test_get_enhancement_by_id_invalid_format(self, client):
         """Test getting enhancement with invalid ID format."""
@@ -126,13 +124,8 @@ class TestEnhancementEndpoints:
         """Test getting enhancement audio."""
         response = client.get("/api/v1/enhancements/enh_test123/audio")
         
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        
-        assert "audio_base64" in data
-        assert "audio_format" in data
-        assert data["audio_format"] == "mp3"
-        assert len(data["audio_base64"]) > 0
+        # Should return 404 since enhancement doesn't exist in database
+        assert response.status_code == status.HTTP_404_NOT_FOUND
     
     def test_get_enhancement_audio_invalid_id(self, client):
         """Test getting audio with invalid enhancement ID."""

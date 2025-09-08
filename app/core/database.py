@@ -39,11 +39,47 @@ def create_tables():
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
+        
+        # Create anonymous user for testing before auth is implemented
+        create_anonymous_user(engine)
+        
         print("✅ Database tables created successfully")
         
     except Exception as e:
         print(f"❌ Failed to create database tables: {e}")
         raise
+
+
+def create_anonymous_user(engine):
+    """Create an anonymous user for testing purposes."""
+    try:
+        from sqlalchemy.orm import sessionmaker
+        from app.models.user import User
+        
+        SessionLocal = sessionmaker(bind=engine)
+        session = SessionLocal()
+        
+        # Check if anonymous user already exists
+        existing_user = session.query(User).filter(User.user_id == "anonymous_user").first()
+        
+        if not existing_user:
+            anonymous_user = User(
+                user_id="anonymous_user",
+                email="anonymous@example.com",
+                name="Anonymous User",
+                google_id="anonymous_google_id"
+            )
+            session.add(anonymous_user)
+            session.commit()
+            print("✅ Anonymous user created successfully")
+        else:
+            print("ℹ️  Anonymous user already exists")
+            
+        session.close()
+        
+    except Exception as e:
+        print(f"⚠️ Failed to create anonymous user: {e}")
+        # Don't fail the entire setup if this fails
 
 
 def get_db_session():

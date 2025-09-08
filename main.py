@@ -60,8 +60,8 @@ async def health_check():
     return {"status": "healthy", "service": "amplify-backend"}
 
 if __name__ == "__main__":
-    # Use port 8000 for local development (matches OpenAPI spec)
-    # Replit will override this with port 5000 via .replit configuration
+    # Use port 8000 for local development (port 5000 is often used by macOS AirPlay)
+    # Replit will override this with PORT environment variable
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(
         "main:app",

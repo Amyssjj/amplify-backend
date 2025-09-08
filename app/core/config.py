@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # Server Configuration
     server_host: str = "0.0.0.0"
-    server_port: int = 5000
+    server_port: int = 8000  # Use 8000 locally (5000 is often used by macOS AirPlay)
     debug: bool = True
     
     # Security
@@ -26,7 +26,13 @@ class Settings(BaseSettings):
     
     # External APIs
     gemini_api_key: Optional[str] = None
-    tts_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    elevenlabs_api_key: Optional[str] = None
+    google_oauth_client_id: Optional[str] = None
+    
+    # TTS Configuration
+    tts_provider: str = "openai"  # "openai", "elevenlabs", or "mock"
+    tts_voice: str = "alloy"  # OpenAI: alloy, echo, fable, onyx, nova, shimmer
     
     # Database
     database_url: Optional[str] = None

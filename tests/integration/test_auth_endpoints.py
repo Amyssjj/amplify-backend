@@ -49,6 +49,7 @@ class TestAuthEndpoints:
         # For now, endpoint might return 500 or placeholder response
         assert response.status_code in [
             status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,  # For invalid token format
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             status.HTTP_200_OK  # If placeholder implementation
         ]
