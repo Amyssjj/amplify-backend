@@ -13,15 +13,8 @@ pydantic-settings==2.1.0
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 alembic>=1.13.0
-pytest==7.4.3
-pytest-asyncio==1.1.0
+pytest>=8.2.0
+pytest-asyncio>=1.1.0
 httpx==0.25.2
-alembic
-elevenlabs
-openai
-pillow
-psycopg2-binary
-pytest-asyncio
 python-dotenv
 pyyaml
-sqlalchemy
