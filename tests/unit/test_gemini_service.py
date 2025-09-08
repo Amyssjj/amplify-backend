@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 import base64
 from app.services.gemini_service import GeminiService, GeminiError, GeminiResponse
+from app.services.prompt_manager import PromptTemplate
 
 
 @pytest.mark.unit
@@ -12,9 +13,24 @@ class TestGeminiService:
     """Test Gemini service functionality."""
     
     @pytest.fixture
-    def gemini_service(self):
+    def mock_prompt_template(self):
+        """Mock prompt template for testing."""
+        return PromptTemplate(
+            category="social",
+            name="story_enhancement",
+            version="1.0.0",
+            description="Test prompt",
+            last_updated="2024-09-08",
+            variables=["transcript", "language_name"],
+            template="Test prompt with {transcript} and {language_name}"
+        )
+    
+    @pytest.fixture
+    def gemini_service(self, mock_prompt_template):
         """Create GeminiService instance for testing."""
-        with patch('app.services.gemini_service.genai'):
+        with patch('app.services.gemini_service.genai'), \
+             patch('app.services.gemini_service.prompt_manager') as mock_pm:
+            mock_pm.get_prompt.return_value = mock_prompt_template
             return GeminiService(api_key="test_api_key")
     
     @pytest.fixture
@@ -156,21 +172,36 @@ class TestGeminiService:
                 language="en"
             )
     
-    def test_build_prompt_structure(self, gemini_service, sample_photo_base64, sample_transcript):
-        """Test that prompt is built with correct structure."""
-        prompt = gemini_service._build_prompt(
-            transcript=sample_transcript,
-            language="en"
-        )
-        
-        # Verify prompt contains key elements
-        assert "story enhancement" in prompt.lower()
-        assert "analyze the provided photo" in prompt.lower()
-        assert sample_transcript in prompt
-        assert "enhanced_transcript" in prompt
-        assert "insights" in prompt
-        assert "plot" in prompt
-        assert "character" in prompt
+    def test_build_prompt_with_prompt_manager(self, gemini_service, sample_transcript):
+        """Test that prompt is built using PromptManager."""
+        with patch('app.services.gemini_service.prompt_manager') as mock_pm:
+            mock_template = Mock()
+            mock_template.format.return_value = "Formatted prompt with transcript"
+            mock_pm.get_prompt.return_value = mock_template
+            
+            prompt = gemini_service._build_prompt(
+                transcript=sample_transcript,
+                language="en"
+            )
+            
+            # Verify PromptManager was called correctly
+            mock_pm.get_prompt.assert_called_once_with("social")
+            mock_template.format.assert_called_once_with(
+                transcript=sample_transcript,
+                language_name="English"
+            )
+            assert prompt == "Formatted prompt with transcript"
+    
+    def test_build_prompt_manager_error(self, gemini_service, sample_transcript):
+        """Test handling of PromptManager errors."""
+        with patch('app.services.gemini_service.prompt_manager') as mock_pm:
+            mock_pm.get_prompt.side_effect = Exception("Prompt loading failed")
+            
+            with pytest.raises(GeminiError, match="Failed to load prompt template"):
+                gemini_service._build_prompt(
+                    transcript=sample_transcript,
+                    language="en"
+                )
     
     def test_build_prompt_with_different_language(self, gemini_service, sample_transcript):
         """Test prompt building with different language."""

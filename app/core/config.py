@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     # Database
     database_url: Optional[str] = None
     
+    # Prompt Management
+    prompts_path: str = "app/prompts"
+    prompts_hot_reload: bool = True  # Auto-set based on debug mode in production
+    
     model_config = ConfigDict(
         env_file=".env",
         case_sensitive=False

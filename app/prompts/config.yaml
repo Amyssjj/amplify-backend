@@ -1,0 +1,24 @@
+# Global prompt configuration
+version: 1.0.0
+description: External prompt management system for Amplify Backend
+
+categories:
+  social:
+    description: "Social interactions, storytelling, and casual conversations"
+    default_tone: "warm and conversational"
+    file: "social.yaml"
+  
+  professional:
+    description: "Business communications, meetings, and formal interactions" 
+    default_tone: "clear and professional"
+    file: "professional.yaml"
+
+settings:
+  # Enable hot reload in development for instant prompt updates
+  hot_reload_enabled: true
+  
+  # Cache duration in seconds (0 = no cache, useful for development)
+  cache_duration: 300
+  
+  # Default language if not specified
+  default_language: "en"
