@@ -86,7 +86,7 @@ def get_db_session():
     """Get database session dependency for FastAPI."""
     try:
         database_url = get_database_url()
-        engine = create_engine(database_url)
+        engine = create_engine(database_url, pool_pre_ping=True)
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
         db = SessionLocal()
@@ -97,7 +97,9 @@ def get_db_session():
             
     except ValueError as e:
         if "DATABASE_URL environment variable is required" in str(e):
+            print(f"❌ Database session error: Database not configured")
             raise RuntimeError("Database not configured") from e
+        print(f"❌ Database session error: {e}")
         raise
     except Exception as e:
         print(f"❌ Database session error: {e}")

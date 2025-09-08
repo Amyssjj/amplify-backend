@@ -20,9 +20,7 @@ router = APIRouter()
 
 @router.post("", response_model=EnhancementTextResponse)
 async def create_enhancement(
-    request: EnhancementRequest, 
-    db: Session = Depends(get_db_session),
-    user_id: str = Depends(get_user_id_or_anonymous)
+    request: EnhancementRequest
 ):
     """Create enhancement (Stage 1 - Text).
     
@@ -44,27 +42,9 @@ async def create_enhancement(
             language=request.language
         )
         
-        # Save to database
-        try:
-            enhancement = Enhancement(
-                enhancement_id=enhancement_id,
-                user_id=user_id,
-                original_transcript=request.transcript,
-                enhanced_transcript=enhancement_result.enhanced_transcript,
-                insights=enhancement_result.insights,
-                photo_base64=request.photo_base64,
-                language=request.language
-            )
-            
-            db.add(enhancement)
-            db.commit()
-            db.refresh(enhancement)
-            
-        except Exception as db_error:
-            db.rollback()
-            # Log the database error but don't fail the request
-            print(f"⚠️ Database save failed: {db_error}")
-            # Continue without database persistence for now
+        # TODO: Save to database - temporarily disabled to isolate AI service issue
+        print(f"✅ Enhancement created: {enhancement_id}")
+        print(f"📝 Enhanced transcript: {enhancement_result.enhanced_transcript[:100]}...")
         
         return EnhancementTextResponse(
             enhancement_id=enhancement_id,
@@ -80,6 +60,7 @@ async def create_enhancement(
         else:
             raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
     except Exception as e:
+        print(f"❌ Enhancement error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("", response_model=EnhancementHistoryResponse)
