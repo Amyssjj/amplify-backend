@@ -86,7 +86,7 @@ async def verify_jwt_token(token: str, db: Session) -> Optional[User]:
     try:
         # Decode the JWT token
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         
         if user_id is None:
             return None
@@ -101,10 +101,13 @@ async def verify_jwt_token(token: str, db: Session) -> Optional[User]:
         return None
 
 
-def get_user_id_or_anonymous() -> str:
+async def get_user_id_or_anonymous(
+    user: Optional[User] = Depends(get_current_user_optional)
+) -> str:
     """
     Get user ID from authenticated user or return 'anonymous_user' for backwards compatibility.
-    This is a transitional function while authentication is being rolled out.
-    Simplified to avoid database dependency issues during development.
+    This function checks for authentication and returns the real user ID if available.
     """
+    if user:
+        return user.user_id
     return "anonymous_user"
