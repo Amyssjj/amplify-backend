@@ -12,6 +12,8 @@ import base64
 import io
 from PIL import Image
 from app.services.prompt_manager import prompt_manager
+from app.services.ai_service_interface import AIStoryEnhancementService
+from app.schemas.ai_response import GeminiResponse
 
 
 class GeminiError(Exception):
@@ -19,15 +21,10 @@ class GeminiError(Exception):
     pass
 
 
-class GeminiResponse(BaseModel):
-    """Response model for Gemini story enhancement."""
-    enhanced_transcript: str = Field(
-        ..., description="Enhanced version of the original story")
-    insights: Dict[str, str] = Field(
-        ..., description="Analysis insights about the enhancements made")
+# GeminiResponse is now imported from app.schemas.ai_response
 
 
-class GeminiService:
+class GeminiService(AIStoryEnhancementService):
     """Service for story enhancement using Google's Gemini AI with vision capabilities."""
 
     def __init__(self, api_key: str = None):
@@ -210,3 +207,11 @@ class GeminiService:
         return GeminiResponse(
             enhanced_transcript=response["enhanced_transcript"],
             insights=insights)
+
+    def supports_vision(self) -> bool:
+        """Check if this service supports vision/image analysis."""
+        return True  # Gemini always supports vision
+
+    def get_provider_name(self) -> str:
+        """Get the name of the AI provider."""
+        return "gemini"
