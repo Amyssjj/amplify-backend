@@ -58,10 +58,13 @@ class TestAIServiceFactory:
         """Test that invalid provider raises error."""
         with patch('app.services.ai_service_factory.settings') as mock_settings:
             mock_settings.ai_provider = "invalid_provider"
+            # No API keys available, so no fallback providers
+            mock_settings.gemini_api_key = None
+            mock_settings.openai_api_key = None
 
             factory = AIServiceFactory()
 
-            with pytest.raises(AIServiceError, match="Unsupported AI provider"):
+            with pytest.raises(AIServiceError, match="Failed to create any AI service"):
                 factory.create_service()
 
     def test_create_service_with_fallback_when_primary_fails(self):
@@ -108,10 +111,11 @@ class TestAIServiceFactory:
         with patch('app.services.ai_service_factory.settings') as mock_settings:
             mock_settings.ai_provider = "gemini"
             mock_settings.gemini_api_key = None  # No API key
+            mock_settings.openai_api_key = None  # No fallback either
 
             factory = AIServiceFactory()
 
-            with pytest.raises(AIServiceError, match="API key is required"):
+            with pytest.raises(AIServiceError, match="Failed to create any AI service"):
                 factory.create_service()
 
     def test_create_service_with_openai_validates_api_key(self):
@@ -119,10 +123,11 @@ class TestAIServiceFactory:
         with patch('app.services.ai_service_factory.settings') as mock_settings:
             mock_settings.ai_provider = "openai"
             mock_settings.openai_api_key = None  # No API key
+            mock_settings.gemini_api_key = None  # No fallback either
 
             factory = AIServiceFactory()
 
-            with pytest.raises(AIServiceError, match="API key is required"):
+            with pytest.raises(AIServiceError, match="Failed to create any AI service"):
                 factory.create_service()
 
     def test_get_available_providers_returns_correct_list(self):
