@@ -27,16 +27,19 @@ class GeminiError(Exception):
 class GeminiService(AIStoryEnhancementService):
     """Service for story enhancement using Google's Gemini AI with vision capabilities."""
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, model: str = None):
         """Initialize Gemini service with API configuration."""
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise GeminiError(
                 "GEMINI_API_KEY environment variable is required")
 
+        # Set model with fallback to config default
+        self.model_name = model or os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash-lite")
+
         # Configure Gemini
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
+        self.model = genai.GenerativeModel(self.model_name)
 
         # Safety settings to allow creative content
         self.safety_settings = {

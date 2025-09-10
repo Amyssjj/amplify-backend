@@ -98,6 +98,26 @@ class TestAIProviderConfiguration:
             settings = Settings()
             assert settings.gemini_model == "models/gemini-pro-vision"
 
+    def test_gemini_model_validation_accepts_valid_models(self):
+        """Test that Gemini model validation accepts valid models."""
+        valid_models = [
+            "models/gemini-2.5-flash-lite",
+            "models/gemini-pro-vision",
+            "models/gemini-pro",
+            "models/gemini-2.0-flash-exp"
+        ]
+
+        for model in valid_models:
+            with patch.dict('os.environ', {'GEMINI_MODEL': model}):
+                settings = Settings()
+                assert settings.gemini_model == model
+
+    def test_gemini_model_validation_rejects_invalid_models(self):
+        """Test that Gemini model validation rejects invalid models."""
+        with patch.dict('os.environ', {'GEMINI_MODEL': 'invalid-gemini-model'}):
+            with pytest.raises(ValueError, match="Invalid Gemini model"):
+                Settings()
+
     def test_ai_provider_capabilities_detection(self):
         """Test that AI provider capabilities are correctly detected."""
         # OpenAI vision models

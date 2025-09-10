@@ -30,7 +30,8 @@ class TestAIServiceFactory:
 
             assert service == mock_service
             mock_gemini.assert_called_once_with(
-                api_key="test_gemini_key"
+                api_key="test_gemini_key",
+                model="models/gemini-2.5-flash-lite"
             )
 
     def test_create_service_with_openai_provider(self):

@@ -101,7 +101,10 @@ class AIServiceFactory:
         if not settings.gemini_api_key:
             raise AIServiceError("Gemini API key is required but not provided")
 
-        return GeminiService(api_key=settings.gemini_api_key)
+        return GeminiService(
+            api_key=settings.gemini_api_key,
+            model=settings.gemini_model
+        )
 
     def _create_openai_service(self) -> OpenAIService:
         """Create OpenAI service with validation."""

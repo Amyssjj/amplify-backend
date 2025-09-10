@@ -67,6 +67,19 @@ class Settings(BaseSettings):
             raise ValueError(f"Invalid OpenAI model: {v}. Must be one of {valid_models}")
         return v
 
+    @validator('gemini_model')
+    def validate_gemini_model(cls, v):
+        """Validate Gemini model setting."""
+        valid_models = [
+            "models/gemini-2.5-flash-lite",
+            "models/gemini-pro-vision",
+            "models/gemini-pro",
+            "models/gemini-2.0-flash-exp"
+        ]
+        if v not in valid_models:
+            raise ValueError(f"Invalid Gemini model: {v}. Must be one of {valid_models}")
+        return v
+
     @property
     def supports_vision(self) -> bool:
         """Check if the current AI provider and model support vision capabilities."""
