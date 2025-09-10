@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.schemas.auth import LoginRequest, Token, GoogleAuthRequest, AuthResponse, UserProfile
 from app.services.google_auth_service import GoogleAuthService, GoogleAuthError
 from app.core.database import get_db_session
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -39,26 +40,26 @@ async def google_auth(request: GoogleAuthRequest, db: Session = Depends(get_db_s
     try:
         # Initialize Google Auth service
         google_auth_service = GoogleAuthService()
-        
+
         # Verify the Google ID token
         token_info = await google_auth_service.verify_id_token(request.id_token)
-        
+
         # Get or create user in database
         user = await google_auth_service.get_or_create_user(token_info, db)
-        
+
         # Generate JWT token for the user
         jwt_token = google_auth_service.generate_jwt_token(user)
-        
+
         # Create user profile response
         user_profile = google_auth_service.create_user_profile(user)
-        
+
         return AuthResponse(
             access_token=jwt_token,
             token_type="bearer",
-            expires_in=3600,  # 1 hour (matches settings.access_token_expire_minutes * 60)
+            expires_in=settings.access_token_expire_minutes * 60,  # 30 days in seconds
             user=user_profile
         )
-        
+
     except GoogleAuthError as e:
         # Handle specific Google auth errors
         if "Invalid token" in str(e) or "Token missing" in str(e) or "ID token is required" in str(e):
