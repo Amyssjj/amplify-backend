@@ -33,7 +33,7 @@ class OpenAIService(AIStoryEnhancementService):
         self.client = openai.OpenAI(api_key=self.api_key)
 
         # Define vision-capable models
-        self.vision_models = {"gpt-4-vision-preview", "gpt-4-turbo"}
+        self.vision_models = {"gpt-4-vision-preview", "gpt-4-turbo", "chatgpt-4o-latest"}
 
     async def enhance_story_with_photo(self,
                                        photo_base64: str,

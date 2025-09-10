@@ -61,7 +61,8 @@ class Settings(BaseSettings):
             "gpt-4-vision-preview",
             "gpt-4",
             "gpt-4-turbo",
-            "gpt-3.5-turbo"
+            "gpt-3.5-turbo",
+            "chatgpt-4o-latest"
         ]
         if v not in valid_models:
             raise ValueError(f"Invalid OpenAI model: {v}. Must be one of {valid_models}")
@@ -74,7 +75,9 @@ class Settings(BaseSettings):
             "models/gemini-2.5-flash-lite",
             "models/gemini-pro-vision",
             "models/gemini-pro",
-            "models/gemini-2.0-flash-exp"
+            "models/gemini-2.0-flash-exp",
+            "models/gemini-2.5-pro",
+            "models/gemini-2.5-flash"
         ]
         if v not in valid_models:
             raise ValueError(f"Invalid Gemini model: {v}. Must be one of {valid_models}")
@@ -86,7 +89,7 @@ class Settings(BaseSettings):
         if self.ai_provider == "gemini":
             return True  # All Gemini models support vision
         elif self.ai_provider == "openai":
-            vision_models = ["gpt-4-vision-preview", "gpt-4-turbo"]
+            vision_models = ["gpt-4-vision-preview", "gpt-4-turbo", "chatgpt-4o-latest"]
             return self.openai_model in vision_models
         return False
 

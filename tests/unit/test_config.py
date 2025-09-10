@@ -53,7 +53,8 @@ class TestAIProviderConfiguration:
             "gpt-4-vision-preview",
             "gpt-4",
             "gpt-4-turbo",
-            "gpt-3.5-turbo"
+            "gpt-3.5-turbo",
+            "chatgpt-4o-latest"
         ]
 
         for model in valid_models:
@@ -104,7 +105,9 @@ class TestAIProviderConfiguration:
             "models/gemini-2.5-flash-lite",
             "models/gemini-pro-vision",
             "models/gemini-pro",
-            "models/gemini-2.0-flash-exp"
+            "models/gemini-2.0-flash-exp",
+            "models/gemini-2.5-pro",
+            "models/gemini-2.5-flash"
         ]
 
         for model in valid_models:
