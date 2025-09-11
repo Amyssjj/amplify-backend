@@ -3,8 +3,7 @@ Main API router for version 1 endpoints.
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, enhancement, auth, tts
-from app.api.v1 import youtube_cards
+from app.api.v1.endpoints import health, enhancement, auth, tts, youtube_cards
 
 # Create the main API router
 api_router = APIRouter()
