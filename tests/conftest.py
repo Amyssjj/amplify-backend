@@ -36,20 +36,20 @@ def event_loop():
 @pytest.fixture
 def test_db():
     """Create test database with isolation per test."""
-    
+
     # Use unique temporary database for each test
     temp_dir = tempfile.gettempdir()
     db_name = f"test_{uuid.uuid4().hex[:8]}.db"
     db_url = f"sqlite:///{temp_dir}/{db_name}"
-    
+
     engine = create_engine(db_url, connect_args={"check_same_thread": False})
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
+
     # Create tables
     Base.metadata.create_all(bind=engine)
-    
+
     yield TestingSessionLocal
-    
+
     # Cleanup
     engine.dispose()
     try:
@@ -77,12 +77,12 @@ def client(test_db) -> Generator[TestClient, None, None]:
             yield db
         finally:
             db.close()
-    
+
     app.dependency_overrides[get_db_session] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -95,12 +95,12 @@ async def async_client(test_db) -> AsyncClient:
             yield db
         finally:
             db.close()
-    
+
     app.dependency_overrides[get_db_session] = override_get_db
-    
+
     async with AsyncClient(app=app, base_url="http://test") as async_test_client:
         yield async_test_client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -112,7 +112,7 @@ def sample_enhancement_request() -> dict:
     sample_image = base64.b64encode(
         b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00\x007n\xf9$\x00\x00\x00\nIDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\r\n\x1d\xb3\x00\x00\x00\x00IEND\xaeB`\x82'
     ).decode('utf-8')
-    
+
     return {
         "photo_base64": sample_image,
         "transcript": "Once upon a time, there was a brave knight who embarked on a quest to save the kingdom.",
@@ -146,11 +146,16 @@ def sample_enhancement_data() -> dict:
     return {
         "enhancement_id": "enh_test123",
         "user_id": "usr_test123",
-        "photo_base64": "fake_base64_image_data",
-        "original_transcript": "Original story text",
+        "prompt_type": "photo",
+        "prompt_title": None,
+        "prompt_youtube_thumbnail_url": None,
+        "source_photo_base64": "fake_base64_image_data",
+        "source_transcript": None,
+        "user_transcript": "Original story text",
         "enhanced_transcript": "Enhanced story text with improvements",
         "insights": {"plot": "Good story structure", "character": "Strong protagonist"},
         "audio_status": "not_generated",
+        "audio_duration_seconds": None,
         "language": "en"
     }
 
@@ -160,8 +165,8 @@ def sample_enhancement_data() -> dict:
 def sample_story_text() -> str:
     """Sample story text for testing."""
     return """
-    Once upon a time, in a small village nestled between rolling hills, 
-    there lived a young baker named Emma. Every morning, she would wake 
+    Once upon a time, in a small village nestled between rolling hills,
+    there lived a young baker named Emma. Every morning, she would wake
     before dawn to prepare fresh bread for the villagers.
     """
 

@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from app.schemas.enhancement import (
     EnhancementTextResponse, EnhancementAudioResponse,
     EnhancementSummary, EnhancementDetails, EnhancementHistoryResponse,
-    AudioStatus
+    AudioStatus, PromptType
 )
 from app.schemas.youtube import PhotoEnhancementRequest
 from app.schemas.auth import GoogleAuthRequest, UserProfile, AuthResponse
@@ -58,7 +58,8 @@ class TestEnhancementSchemas:
 
         # Empty transcript
         with pytest.raises(ValidationError):
-            EnhancementRequest(
+            PhotoEnhancementRequest(
+                type='photo',
                 photo_base64="fake_base64",
                 transcript="",  # Empty string
                 language="en"
@@ -105,8 +106,13 @@ class TestEnhancementSchemas:
         summary = EnhancementSummary(
             enhancement_id="enh_test123",
             created_at="2025-09-07T12:00:00Z",
+            prompt_type=PromptType.PHOTO,
+            prompt_title="Test Photo",
+            prompt_youtube_thumbnail_url=None,
+            prompt_photo_thumbnail_base64="photo_thumb",
             transcript_preview="Once upon a time...",
-            audio_status=AudioStatus.READY
+            audio_status=AudioStatus.READY,
+            audio_duration_seconds=180
         )
 
         assert summary.audio_status == "ready"
@@ -116,16 +122,22 @@ class TestEnhancementSchemas:
         details = EnhancementDetails(
             enhancement_id="enh_test123",
             created_at="2025-09-07T12:00:00Z",
-            original_transcript="Original story",
+            prompt_type=PromptType.PHOTO,
+            prompt_title="Test Photo",
+            prompt_youtube_thumbnail_url=None,
+            source_photo_base64="test_photo_data",
+            source_transcript=None,
+            user_transcript="Original story",
             enhanced_transcript="Enhanced story",
             insights={"plot": "Good", "character": "Strong"},
             audio_status=AudioStatus.NOT_GENERATED,
-            photo_base64=None
+            audio_duration_seconds=None
         )
 
         assert details.enhancement_id == "enh_test123"
         assert details.audio_status == "not_generated"
-        assert details.photo_base64 is None
+        assert details.source_photo_base64 == "test_photo_data"
+        assert details.user_transcript == "Original story"
 
     def test_enhancement_history_response(self):
         """Test EnhancementHistoryResponse schema."""
@@ -135,14 +147,24 @@ class TestEnhancementSchemas:
                 EnhancementSummary(
                     enhancement_id="enh_test1",
                     created_at="2025-09-07T12:00:00Z",
+                    prompt_type=PromptType.PHOTO,
+                    prompt_title="Photo 1",
+                    prompt_youtube_thumbnail_url=None,
+                    prompt_photo_thumbnail_base64="photo_thumb_1",
                     transcript_preview="Story 1...",
-                    audio_status=AudioStatus.READY
+                    audio_status=AudioStatus.READY,
+                    audio_duration_seconds=120
                 ),
                 EnhancementSummary(
                     enhancement_id="enh_test2",
                     created_at="2025-09-07T13:00:00Z",
+                    prompt_type=PromptType.YOUTUBE,
+                    prompt_title="YouTube Video",
+                    prompt_youtube_thumbnail_url="https://example.com/thumb.jpg",
+                    prompt_photo_thumbnail_base64=None,
                     transcript_preview="Story 2...",
-                    audio_status=AudioStatus.NOT_GENERATED
+                    audio_status=AudioStatus.NOT_GENERATED,
+                    audio_duration_seconds=None
                 )
             ]
         )
