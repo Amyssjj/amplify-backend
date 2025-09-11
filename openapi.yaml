@@ -1,13 +1,13 @@
 openapi: 3.1.0
 info:
-  title: Amplify AI Coach API (Final MVP)
+  title: Amplify AI Coach API
   description: |
-    AI-powered storytelling enhancement for a pre-MVP demo.
+    AI-powered communication enhancement supporting both photo storytelling and YouTube insight practice.
     This API uses a two-stage flow designed for a seamless user experience:
-    1. A fast `POST` request returns text analysis (enhanced story, insights) immediately.
+    1. A fast `POST` request returns text analysis (enhanced story/insight, feedback) immediately.
     2. The client app then automatically makes a `GET` request to generate the audio in the background.
     Metadata is persisted in a server-side database, while audio assets are sent to the client for local storage.
-  version: 2.0.0
+  version: 2.1.0
   contact:
     name: Amplify Team
     email: support@amplify.app
@@ -24,7 +24,9 @@ tags:
   - name: Health
     description: Service health monitoring
   - name: Enhancement
-    description: Story enhancement with Gemini + TTS
+    description: Story and insight enhancement with Gemini + TTS
+  - name: YouTube
+    description: YouTube practice cards management
   - name: Auth
     description: Google OAuth authentication
 
@@ -37,7 +39,7 @@ paths:
       operationId: getHealth
       security: []
       responses:
-        '200':
+        "200":
           description: Service is healthy
           content:
             application/json:
@@ -55,12 +57,38 @@ paths:
       operationId: getReadiness
       security: []
       responses:
-        '200':
+        "200":
           description: All services ready
-          content: { application/json: { schema: { $ref: '#/components/schemas/ReadinessResponse' } } }
-        '503':
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/ReadinessResponse" } },
+            }
+        "503":
           description: Services not ready
-          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+            }
+
+  # --- YouTube Cards Endpoint ---
+  /api/v1/youtube-cards:
+    get:
+      tags: [YouTube]
+      summary: Get available YouTube practice cards
+      operationId: getYouTubeCards
+      description: Returns a list of curated YouTube video clips for users to practice communication skills.
+      responses:
+        "200":
+          description: List of YouTube cards retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/YouTubeCard"
+        "401": { $ref: "#/components/responses/Unauthorized" }
 
   # --- Enhancement Flow ---
   /api/v1/enhancements:
@@ -69,24 +97,25 @@ paths:
       summary: Create enhancement (Stage 1 - Text)
       operationId: createEnhancement
       description: |
-        Performs Gemini analysis on a photo and transcript. 
-        Responds quickly with text-based results. The client app should immediately 
-        call `GET /api/v1/enhancements/{id}/audio` in the background to complete the flow.
+        Performs Gemini analysis on a user transcript based on a specific prompt
+        context (either a photo or a YouTube insight). Responds quickly with
+        text-based results. The client app should immediately call
+        `GET /api/v1/enhancements/{id}/audio` in the background to complete the flow.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EnhancementRequest'
+              $ref: "#/components/schemas/EnhancementRequest"
       responses:
-        '200':
+        "200":
           description: Text enhancement successful.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EnhancementTextResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+                $ref: "#/components/schemas/EnhancementTextResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
 
     get:
       tags: [Enhancement]
@@ -94,10 +123,18 @@ paths:
       operationId: getEnhancements
       description: Returns a paginated list of the user's past enhancements, including audio status.
       parameters:
-        - { name: limit, in: query, schema: { type: integer, default: 20, minimum: 1, maximum: 50 } }
-        - { name: offset, in: query, schema: { type: integer, default: 0, minimum: 0 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, default: 20, minimum: 1, maximum: 50 },
+          }
+        - {
+            name: offset,
+            in: query,
+            schema: { type: integer, default: 0, minimum: 0 },
+          }
       responses:
-        '200':
+        "200":
           description: History retrieved successfully.
           content:
             application/json:
@@ -109,8 +146,8 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/EnhancementSummary'
-        '401': { $ref: '#/components/responses/Unauthorized' }
+                      $ref: "#/components/schemas/EnhancementSummary"
+        "401": { $ref: "#/components/responses/Unauthorized" }
 
   /api/v1/enhancements/{enhancement_id}:
     get:
@@ -119,16 +156,21 @@ paths:
       operationId: getEnhancementById
       description: Returns the full persisted details of a specific enhancement, including its audio status.
       parameters:
-        - { name: enhancement_id, in: path, required: true, schema: { type: string, pattern: '^enh_[a-zA-Z0-9]+$' } }
+        - {
+            name: enhancement_id,
+            in: path,
+            required: true,
+            schema: { type: string, pattern: "^enh_[a-zA-Z0-9]+$" },
+          }
       responses:
-        '200':
+        "200":
           description: Enhancement details retrieved.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EnhancementDetails'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
+                $ref: "#/components/schemas/EnhancementDetails"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
 
   /api/v1/enhancements/{enhancement_id}/audio:
     get:
@@ -140,19 +182,28 @@ paths:
         The client app should call this in the background immediately after Stage 1 succeeds.
         The response contains the Base64 audio data for the client to save locally.
       parameters:
-        - { name: enhancement_id, in: path, required: true, schema: { type: string, pattern: '^enh_[a-zA-Z0-9]+$' } }
+        - {
+            name: enhancement_id,
+            in: path,
+            required: true,
+            schema: { type: string, pattern: "^enh_[a-zA-Z0-9]+$" },
+          }
       responses:
-        '200':
+        "200":
           description: Audio generated or retrieved successfully.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EnhancementAudioResponse'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '503':
+                $ref: "#/components/schemas/EnhancementAudioResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503":
           description: TTS service unavailable.
-          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+            }
 
   # --- Authentication Flow ---
   /api/v1/auth/google:
@@ -164,101 +215,323 @@ paths:
       security: []
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/GoogleAuthRequest' } } }
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/GoogleAuthRequest" } },
+          }
       responses:
-        '200':
+        "200":
           description: Authentication successful.
-          content: { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } }
-        '401':
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/AuthResponse" } },
+            }
+        "401":
           description: Invalid Google token.
-          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+            }
 
 components:
   schemas:
+    # --- YouTube Card Schema ---
+    YouTubeCard:
+      type: object
+      required:
+        [
+          id,
+          title,
+          youtube_video_id,
+          thumbnail_url,
+          duration_seconds,
+          clip_transcript,
+        ]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the YouTube card
+          example: ytc_12345
+        title:
+          type: string
+          description: Title of the video clip
+        youtube_video_id:
+          type: string
+          description: The 11-character YouTube video ID
+          pattern: "^[a-zA-Z0-9_-]{11}$"
+        thumbnail_url:
+          type: string
+          format: uri
+          description: Direct URL to the video thumbnail image
+        duration_seconds:
+          type: integer
+          description: Duration of the video clip in seconds
+          minimum: 1
+        start_time_seconds:
+          type: integer
+          nullable: true
+          description: Optional start time for the clip in seconds
+          minimum: 0
+        end_time_seconds:
+          type: integer
+          nullable: true
+          description: Optional end time for the clip in seconds
+          minimum: 0
+        clip_transcript:
+          type: string
+          description: Transcript corresponding to the clip's duration
+
     # --- Request Schemas ---
     EnhancementRequest:
+      oneOf:
+        - $ref: "#/components/schemas/PhotoEnhancementRequest"
+        - $ref: "#/components/schemas/YouTubeEnhancementRequest"
+      discriminator:
+        propertyName: type
+        mapping:
+          photo: "#/components/schemas/PhotoEnhancementRequest"
+          youtube: "#/components/schemas/YouTubeEnhancementRequest"
+
+    PhotoEnhancementRequest:
       type: object
-      required: [photo_base64, transcript]
+      required: [type, photo_base64, transcript]
       properties:
-        photo_base64: { type: string, format: byte, description: "Base64 encoded JPEG or PNG image (max 10MB)" }
-        transcript: { type: string, description: "User's original story transcript", minLength: 1, maxLength: 5000 }
-        language: { type: string, pattern: '^[a-z]{2}$', default: en, description: "Language code (ISO 639-1)" }
+        type:
+          type: string
+          enum: [photo]
+          description: Type of enhancement prompt
+        photo_base64:
+          type: string
+          format: byte
+          description: Base64 encoded JPEG or PNG image (max 10MB)
+        transcript:
+          type: string
+          description: User's original story transcript
+          minLength: 1
+          maxLength: 5000
+        language:
+          type: string
+          pattern: "^[a-z]{2}$"
+          default: en
+          description: Language code (ISO 639-1)
+
+    YouTubeEnhancementRequest:
+      type: object
+      required: [type, source_transcript, transcript]
+      properties:
+        type:
+          type: string
+          enum: [youtube]
+          description: Type of enhancement prompt
+        source_transcript:
+          type: string
+          description: Original transcript from the YouTube video clip
+          minLength: 1
+        transcript:
+          type: string
+          description: User's summary or takeaway transcript
+          minLength: 1
+          maxLength: 5000
+        language:
+          type: string
+          pattern: "^[a-z]{2}$"
+          default: en
+          description: Language code (ISO 639-1)
 
     GoogleAuthRequest:
       type: object
       required: [id_token]
       properties:
-        id_token: { type: string, description: "Google ID token obtained from the iOS client" }
+        id_token:
+          type: string
+          description: Google ID token obtained from the iOS client
 
     # --- Response Schemas ---
     EnhancementTextResponse:
       type: object
       required: [enhancement_id, enhanced_transcript, insights]
       properties:
-        enhancement_id: { type: string, pattern: '^enh_[a-zA-Z0-9]+$', description: "Unique ID for the new enhancement" }
-        enhanced_transcript: { type: string, description: "The AI-enhanced version of the story" }
-        insights: { type: object, additionalProperties: { type: string }, description: "Dynamic, key-value insights from Gemini analysis" }
+        enhancement_id:
+          type: string
+          pattern: "^enh_[a-zA-Z0-9]+$"
+          description: Unique ID for the new enhancement
+        enhanced_transcript:
+          type: string
+          description: The AI-enhanced version of the story or insight
+        insights:
+          type: object
+          additionalProperties: { type: string }
+          description: Dynamic, key-value insights from Gemini analysis
 
     EnhancementAudioResponse:
       type: object
       required: [audio_base64, audio_format]
       properties:
-        audio_base64: { type: string, format: byte, description: "Base64 encoded MP3 audio data" }
-        audio_format: { type: string, enum: [mp3], description: "The format of the audio data" }
+        audio_base64:
+          type: string
+          format: byte
+          description: Base64 encoded MP3 audio data
+        audio_format:
+          type: string
+          enum: [mp3]
+          description: The format of the audio data
 
     EnhancementSummary:
       type: object
-      required: [enhancement_id, created_at, transcript_preview, audio_status]
+      required:
+        [
+          enhancement_id,
+          created_at,
+          prompt_type,
+          prompt_title,
+          transcript_preview,
+          audio_status,
+        ]
       properties:
-        enhancement_id: { type: string }
-        created_at: { type: string, format: date-time }
-        transcript_preview: { type: string, maxLength: 100, description: "A short preview of the enhanced transcript" }
-        audio_status:
+        enhancement_id:
           type: string
-          enum: [not_generated, ready]
-          description: "Indicates if the audio has been generated. 'ready' implies it was generated at least once."
-
-    EnhancementDetails:
-      type: object
-      required: [enhancement_id, created_at, original_transcript, enhanced_transcript, insights, audio_status]
-      properties:
-        enhancement_id: { type: string }
-        created_at: { type: string, format: date-time }
-        original_transcript: { type: string }
-        enhanced_transcript: { type: string }
-        insights: { type: object, additionalProperties: { type: string } }
-        audio_status:
+          description: Enhancement ID
+        created_at:
           type: string
-          enum: [not_generated, ready]
-          description: "Indicates if the audio is available to be played or fetched again."
-        photo_base64:
+          format: date-time
+          description: Creation timestamp
+        prompt_type:
+          type: string
+          enum: [photo, youtube]
+          description: Type of prompt used for enhancement
+        prompt_title:
+          type: string
+          description: Title of the prompt (photo description or YouTube video title)
+        prompt_youtube_thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Thumbnail URL for YouTube prompts
+        prompt_photo_thumbnail_base64:
           type: string
           format: byte
           nullable: true
-          description: "Original photo data, sent on-demand for display purposes."
+          description: Base64 encoded thumbnail of the photo (for photo prompts)
+        transcript_preview:
+          type: string
+          maxLength: 100
+          description: Short preview of the enhanced transcript
+        audio_status:
+          type: string
+          enum: [not_generated, ready]
+          description: Audio generation status
+        audio_duration_seconds:
+          type: integer
+          nullable: true
+          description: Duration of generated audio in seconds (null if not generated)
+          minimum: 0
+
+    EnhancementDetails:
+      type: object
+      required:
+        [
+          enhancement_id,
+          created_at,
+          prompt_type,
+          user_transcript,
+          enhanced_transcript,
+          insights,
+          audio_status,
+        ]
+      properties:
+        enhancement_id:
+          type: string
+          description: Enhancement ID
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        prompt_type:
+          type: string
+          enum: [photo, youtube]
+          description: Type of prompt used for enhancement
+        prompt_title:
+          type: string
+          nullable: true
+          description: Title of the prompt (photo description or YouTube video title)
+        prompt_youtube_thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Thumbnail URL for YouTube prompts
+        source_photo_base64:
+          type: string
+          format: byte
+          nullable: true
+          description: Original photo data (only for photo prompts)
+        source_transcript:
+          type: string
+          nullable: true
+          description: Original YouTube clip transcript (only for YouTube prompts)
+        user_transcript:
+          type: string
+          description: User's original transcript
+        enhanced_transcript:
+          type: string
+          description: AI-enhanced transcript
+        insights:
+          type: object
+          additionalProperties: { type: string }
+          description: Key-value insights from analysis
+        audio_status:
+          type: string
+          enum: [not_generated, ready]
+          description: Audio generation status
+        audio_duration_seconds:
+          type: integer
+          nullable: true
+          description: Duration of generated audio in seconds (null if not generated)
+          minimum: 0
 
     AuthResponse:
       type: object
       required: [access_token, token_type, user]
       properties:
-        access_token: { type: string, description: "The JWT token for authenticating subsequent API requests" }
-        token_type: { type: string, enum: [bearer], default: bearer }
-        expires_in: { type: integer, example: 3600, description: "Token expiry time in seconds" }
+        access_token:
+          type: string
+          description: JWT token for authenticating subsequent API requests
+        token_type:
+          type: string
+          enum: [bearer]
+          default: bearer
+        expires_in:
+          type: integer
+          example: 3600
+          description: Token expiry time in seconds
         user:
           type: object
           required: [user_id, email]
           properties:
-            user_id: { type: string, description: "Unique internal user ID" }
-            email: { type: string, format: email }
-            name: { type: string, description: "User's full name from Google" }
-            picture: { type: string, format: uri, description: "URL to user's profile picture from Google" }
+            user_id:
+              type: string
+              description: Unique internal user ID
+            email:
+              type: string
+              format: email
+            name:
+              type: string
+              description: User's full name from Google
+            picture:
+              type: string
+              format: uri
+              description: URL to user's profile picture from Google
 
     # --- Utility Schemas ---
     ReadinessResponse:
       type: object
       required: [status, services]
       properties:
-        status: { type: string, enum: [ready, not_ready] }
+        status:
+          type: string
+          enum: [ready, not_ready]
         services:
           type: object
           properties:
@@ -270,15 +543,22 @@ components:
       type: object
       required: [error, message]
       properties:
-        error: { type: string, description: "A machine-readable error code" }
-        message: { type: string, description: "A human-readable error message" }
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
 
     ValidationErrorResponse:
       type: object
       required: [error, message, validation_errors]
       properties:
-        error: { type: string, enum: [VALIDATION_ERROR] }
-        message: { type: string }
+        error:
+          type: string
+          enum: [VALIDATION_ERROR]
+        message:
+          type: string
         validation_errors:
           type: array
           items:
@@ -291,20 +571,34 @@ components:
   responses:
     BadRequest:
       description: The request body is invalid or missing required fields.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
+      content:
+        {
+          application/json:
+            {
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" },
+            },
+        }
     Unauthorized:
       description: The JWT is missing, invalid, or expired.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+      content:
+        {
+          application/json:
+            { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+        }
     NotFound:
       description: The requested enhancement does not exist.
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+      content:
+        {
+          application/json:
+            { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+        }
 
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "A JWT obtained from the `/api/v1/auth/google` endpoint."
+      description: JWT obtained from the `/api/v1/auth/google` endpoint.
 
 security:
   - BearerAuth: []

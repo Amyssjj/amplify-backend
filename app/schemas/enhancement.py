@@ -2,7 +2,7 @@
 Enhancement-related schemas matching OpenAPI specification.
 """
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Literal
 from datetime import datetime
 from enum import Enum
 
@@ -13,8 +13,15 @@ class AudioStatus(str, Enum):
     READY = "ready"
 
 
-class EnhancementRequest(BaseModel):
-    """Request model for enhancement creation (OpenAPI EnhancementRequest)."""
+class PromptType(str, Enum):
+    """Type of prompt used for enhancement."""
+    PHOTO = "photo"
+    YOUTUBE = "youtube"
+
+
+# Legacy request model for backward compatibility
+class LegacyEnhancementRequest(BaseModel):
+    """Legacy request model for photo enhancement (backward compatibility)."""
     photo_base64: str = Field(..., description="Base64 encoded JPEG or PNG image (max 10MB)")
     transcript: str = Field(..., description="User's original story transcript", min_length=1, max_length=5000)
     language: str = Field(default="en", description="Language code (ISO 639-1)", pattern=r"^[a-z]{2}$")
@@ -23,7 +30,7 @@ class EnhancementRequest(BaseModel):
 class EnhancementTextResponse(BaseModel):
     """Response model for Stage 1 - Text enhancement."""
     enhancement_id: str = Field(..., description="Unique ID for the new enhancement", pattern=r"^enh_[a-zA-Z0-9]+$")
-    enhanced_transcript: str = Field(..., description="The AI-enhanced version of the story")
+    enhanced_transcript: str = Field(..., description="The AI-enhanced version of the story or insight")
     insights: Dict[str, str] = Field(..., description="Dynamic, key-value insights from Gemini analysis")
 
 
@@ -37,19 +44,29 @@ class EnhancementSummary(BaseModel):
     """Summary model for enhancement history."""
     enhancement_id: str = Field(..., description="Enhancement ID")
     created_at: datetime = Field(..., description="Creation timestamp")
+    prompt_type: PromptType = Field(..., description="Type of prompt used for enhancement")
+    prompt_title: str = Field(..., description="Title of the prompt")
+    prompt_youtube_thumbnail_url: Optional[str] = Field(None, description="Thumbnail URL for YouTube prompts")
+    prompt_photo_thumbnail_base64: Optional[str] = Field(None, description="Base64 encoded thumbnail of the photo")
     transcript_preview: str = Field(..., description="A short preview of the enhanced transcript", max_length=100)
     audio_status: AudioStatus = Field(..., description="Audio generation status")
+    audio_duration_seconds: Optional[int] = Field(None, description="Duration of generated audio in seconds", ge=0)
 
 
 class EnhancementDetails(BaseModel):
     """Full enhancement details model."""
     enhancement_id: str = Field(..., description="Enhancement ID")
     created_at: datetime = Field(..., description="Creation timestamp")
-    original_transcript: str = Field(..., description="Original user transcript")
+    prompt_type: PromptType = Field(..., description="Type of prompt used for enhancement")
+    prompt_title: Optional[str] = Field(None, description="Title of the prompt")
+    prompt_youtube_thumbnail_url: Optional[str] = Field(None, description="Thumbnail URL for YouTube prompts")
+    source_photo_base64: Optional[str] = Field(None, description="Original photo data (only for photo prompts)")
+    source_transcript: Optional[str] = Field(None, description="Original YouTube clip transcript (only for YouTube prompts)")
+    user_transcript: str = Field(..., description="User's original transcript")
     enhanced_transcript: str = Field(..., description="AI-enhanced transcript")
     insights: Dict[str, str] = Field(..., description="Key-value insights from analysis")
     audio_status: AudioStatus = Field(..., description="Audio availability status")
-    photo_base64: Optional[str] = Field(None, description="Original photo data for display")
+    audio_duration_seconds: Optional[int] = Field(None, description="Duration of generated audio in seconds", ge=0)
 
 
 class EnhancementHistoryResponse(BaseModel):

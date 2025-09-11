@@ -218,3 +218,109 @@ class GeminiService(AIStoryEnhancementService):
     def get_provider_name(self) -> str:
         """Get the name of the AI provider."""
         return "gemini"
+
+    async def enhance_youtube_insight(self,
+                                     source_transcript: str,
+                                     user_transcript: str,
+                                     language: str = "en") -> GeminiResponse:
+        """
+        Enhance a user's YouTube video insight/summary using the source transcript for context.
+
+        Args:
+            source_transcript: Original YouTube video transcript
+            user_transcript: User's summary or takeaway
+            language: Language code (ISO 639-1)
+
+        Returns:
+            GeminiResponse with enhanced insight and feedback
+        """
+        # Validate language code
+        valid_languages = {
+            'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ru', 'ar', 'hi'
+        }
+        if language not in valid_languages:
+            raise GeminiError(f"Invalid language code: {language}")
+
+        try:
+            # Build YouTube-specific prompt
+            prompt = self._build_youtube_prompt(source_transcript, user_transcript, language)
+
+            # Generate content without image (text-only)
+            response = self.model.generate_content(
+                prompt,
+                safety_settings=self.safety_settings,
+                generation_config={
+                    'temperature': 0.7,
+                    'top_p': 0.8,
+                    'top_k': 40,
+                    'max_output_tokens': 2048,
+                }
+            )
+
+            # Parse JSON response
+            response_text = response.text
+
+            # Extract JSON from response (handle potential markdown formatting)
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```',
+                                 response_text, re.DOTALL | re.MULTILINE)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                # Try to find JSON without markdown
+                json_str = response_text.strip()
+
+            response_data = json.loads(json_str)
+            return self._parse_response(response_data)
+
+        except json.JSONDecodeError as e:
+            raise GeminiError(f"Invalid JSON response from Gemini: {str(e)}")
+        except Exception as e:
+            raise GeminiError(f"YouTube enhancement failed: {str(e)}")
+
+    def _build_youtube_prompt(self, source_transcript: str, user_transcript: str, language: str) -> str:
+        """Build the prompt for YouTube insight enhancement using PromptManager."""
+        # Language mapping for human-readable names
+        language_names = {
+            'en': 'English',
+            'es': 'Spanish',
+            'fr': 'French',
+            'de': 'German',
+            'it': 'Italian',
+            'pt': 'Portuguese',
+            'ja': 'Japanese',
+            'ko': 'Korean',
+            'zh': 'Chinese',
+            'ru': 'Russian',
+            'ar': 'Arabic',
+            'hi': 'Hindi'
+        }
+        lang_name = language_names.get(language, 'English')
+
+        # Get the YouTube prompt template from PromptManager
+        try:
+            prompt_template = prompt_manager.get_prompt("youtube_insight")
+            return prompt_template.format(
+                source_transcript=source_transcript,
+                user_transcript=user_transcript,
+                language_name=lang_name
+            )
+        except Exception as e:
+            # Fallback to a basic prompt if template loading fails
+            return f"""You are an AI communication coach helping users improve their ability to summarize and extract insights from video content.
+
+Given the following YouTube video transcript and the user's summary/takeaway, provide an enhanced version of their insight along with constructive feedback.
+
+Original Video Transcript:
+{source_transcript}
+
+User's Summary/Takeaway:
+{user_transcript}
+
+Please respond in {lang_name} with a JSON object containing:
+1. "enhanced_transcript": An improved version of the user's summary that is more articulate, insightful, and professionally structured
+2. "insights": An object with feedback on:
+   - "framework": How well they structured their summary
+   - "phrasing": Language and vocabulary usage
+   - "synthesis_clarity": How well they captured the key points
+
+Format your response as valid JSON."""
