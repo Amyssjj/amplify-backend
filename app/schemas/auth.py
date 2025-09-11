@@ -1,5 +1,6 @@
 """
 Authentication-related schemas matching OpenAPI specification.
+Google OAuth only - no username/password authentication.
 """
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -24,17 +25,3 @@ class AuthResponse(BaseModel):
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: Optional[int] = Field(3600, description="Token expiry time in seconds")
     user: UserProfile = Field(..., description="User profile information")
-
-
-# Legacy schemas for backward compatibility
-class LoginRequest(BaseModel):
-    """Login request model (legacy)."""
-    username: str = Field(..., description="Username")
-    password: str = Field(..., description="Password", json_schema_extra={"format": "password"})
-
-
-class Token(BaseModel):
-    """Token response model (legacy)."""
-    access_token: str = Field(..., description="JWT access token")
-    token_type: str = Field(default="bearer", description="Token type")
-    expires_in: int = Field(..., description="Token expiration time in seconds")
