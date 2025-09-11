@@ -244,7 +244,7 @@ async def get_enhancement_audio(
         tts_service = TTSService()
 
         # Generate audio
-        audio_base64 = await tts_service.generate_speech(
+        audio_base64, audio_format = await tts_service.generate_audio(
             text=enhancement.enhanced_transcript,
             language=enhancement.language
         )
@@ -260,7 +260,7 @@ async def get_enhancement_audio(
 
         return EnhancementAudioResponse(
             audio_base64=audio_base64,
-            audio_format="mp3"
+            audio_format=audio_format
         )
 
     except HTTPException:

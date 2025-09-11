@@ -114,8 +114,20 @@ def sample_enhancement_request() -> dict:
     ).decode('utf-8')
 
     return {
+        "type": "photo",  # Discriminator field for discriminated union
         "photo_base64": sample_image,
         "transcript": "Once upon a time, there was a brave knight who embarked on a quest to save the kingdom.",
+        "language": "en"
+    }
+
+
+@pytest.fixture
+def sample_youtube_enhancement_request() -> dict:
+    """Sample YouTube enhancement request matching OpenAPI schema."""
+    return {
+        "type": "youtube",  # Discriminator field for YouTube type
+        "youtube_card_id": "ytc_12345",
+        "transcript": "In this video, I learned that effective communication requires active listening and empathy.",
         "language": "en"
     }
 
