@@ -51,13 +51,13 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
-    return {"message": "Amplify Backend API", "status": "running"}
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "amplify-backend"}
+    """Root endpoint - Welcome message"""
+    return {
+        "message": "Amplify Backend API",
+        "status": "running",
+        "docs": "/docs",
+        "health": "/api/v1/health/"
+    }
 
 if __name__ == "__main__":
     # Use port 5000 for Replit deployment (required for proper deployment)

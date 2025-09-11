@@ -220,7 +220,7 @@ class TestSystemReliability:
             client.post("/api/v1/enhancements", json=sample_enhancement_request)
 
         # Health check should still work
-        health_response = client.get("/health")
+        health_response = client.get("/api/v1/health/")
         assert health_response.status_code == status.HTTP_200_OK
 
         health_data = health_response.json()
@@ -230,7 +230,7 @@ class TestSystemReliability:
         """Test that all API endpoints are consistently available."""
         endpoints_to_test = [
             ("/", "GET"),
-            ("/health", "GET"),
+            ("/api/v1/health/", "GET"),
             ("/api/v1/enhancements", "GET"),
             ("/api/v1/enhancements", "POST"),
         ]

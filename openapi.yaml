@@ -4,7 +4,7 @@ info:
   description: |
     AI-powered communication enhancement supporting both photo storytelling and YouTube insight practice.
     This API uses a two-stage flow designed for a seamless user experience:
-    1. A fast `POST` request returns text analysis (enhanced story/insight, feedback) immediately.
+    1. A fast `POST` request returns text analysis (enhanced story, insight) immediately.
     2. The client app then automatically makes a `GET` request to generate the audio in the background.
     Metadata is persisted in a server-side database, while audio assets are sent to the client for local storage.
   version: 2.1.0
@@ -24,7 +24,7 @@ tags:
   - name: Health
     description: Service health monitoring
   - name: Enhancement
-    description: Story and insight enhancement with Gemini + TTS
+    description: Story and insight enhancement with Gemini/OpenAI + TTS
   - name: YouTube
     description: YouTube practice cards management
   - name: Auth
@@ -32,7 +32,7 @@ tags:
 
 paths:
   # Health Check Endpoints
-  /health:
+  /api/v1/health/:
     get:
       tags: [Health]
       summary: Basic health check
@@ -47,18 +47,18 @@ paths:
                 type: object
                 properties:
                   status: { type: string, example: healthy }
-                  timestamp: { type: string, format: date-time }
-                required: [status, timestamp]
+                  service: { type: string, example: amplify-backend }
+                required: [status]
 
-  /health/ready:
+  /api/v1/health/detailed:
     get:
       tags: [Health]
-      summary: Readiness check
-      operationId: getReadiness
+      summary: Detailed health check
+      operationId: getDetailedHealth
       security: []
       responses:
         "200":
-          description: All services ready
+          description: Detailed service health
           content:
             {
               application/json:
