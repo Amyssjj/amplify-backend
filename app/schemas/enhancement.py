@@ -2,7 +2,7 @@
 Enhancement-related schemas matching OpenAPI specification.
 """
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional, Literal
+from typing import Dict, List, Optional
 from datetime import datetime
 from enum import Enum
 
@@ -17,14 +17,6 @@ class PromptType(str, Enum):
     """Type of prompt used for enhancement."""
     PHOTO = "photo"
     YOUTUBE = "youtube"
-
-
-# Legacy request model for backward compatibility
-class LegacyEnhancementRequest(BaseModel):
-    """Legacy request model for photo enhancement (backward compatibility)."""
-    photo_base64: str = Field(..., description="Base64 encoded JPEG or PNG image (max 10MB)")
-    transcript: str = Field(..., description="User's original story transcript", min_length=1, max_length=5000)
-    language: str = Field(default="en", description="Language code (ISO 639-1)", pattern=r"^[a-z]{2}$")
 
 
 class EnhancementTextResponse(BaseModel):

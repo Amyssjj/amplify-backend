@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import logging
 
-from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.core.database import get_db_session
+from app.core.auth import get_current_user_optional
 from app.models.youtube_card import YouTubeCard
 from app.schemas.youtube import YouTubeCard as YouTubeCardSchema
 
@@ -18,8 +18,8 @@ router = APIRouter()
 
 @router.get("/youtube-cards", response_model=List[YouTubeCardSchema])
 async def get_youtube_cards(
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user_optional),
+    db: Session = Depends(get_db_session)
 ) -> List[YouTubeCardSchema]:
     """
     Get available YouTube practice cards.

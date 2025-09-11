@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.youtube_cards import router
 from app.models.youtube_card import YouTubeCard
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user_optional
 
 
 # Create a test app with just the YouTube cards router
@@ -61,8 +61,8 @@ class TestYouTubeCardsEndpoint:
 
     def test_get_youtube_cards_success(self, client, mock_user, mock_youtube_cards):
         """Test successful retrieval of YouTube cards."""
-        with patch("app.api.v1.youtube_cards.get_current_user", return_value=mock_user):
-            with patch("app.api.v1.youtube_cards.get_db") as mock_get_db:
+        with patch("app.api.v1.youtube_cards.get_current_user_optional", return_value=mock_user):
+            with patch("app.api.v1.youtube_cards.get_db_session") as mock_get_db:
                 # Setup mock database session
                 mock_db = Mock(spec=Session)
                 mock_get_db.return_value = mock_db
@@ -92,8 +92,8 @@ class TestYouTubeCardsEndpoint:
 
     def test_get_youtube_cards_empty(self, client, mock_user):
         """Test retrieval when no YouTube cards are available."""
-        with patch("app.api.v1.youtube_cards.get_current_user", return_value=mock_user):
-            with patch("app.api.v1.youtube_cards.get_db") as mock_get_db:
+        with patch("app.api.v1.youtube_cards.get_current_user_optional", return_value=mock_user):
+            with patch("app.api.v1.youtube_cards.get_db_session") as mock_get_db:
                 # Setup mock database session
                 mock_db = Mock(spec=Session)
                 mock_get_db.return_value = mock_db
@@ -122,8 +122,8 @@ class TestYouTubeCardsEndpoint:
 
     def test_get_youtube_cards_database_error(self, client, mock_user):
         """Test handling of database errors."""
-        with patch("app.api.v1.youtube_cards.get_current_user", return_value=mock_user):
-            with patch("app.api.v1.youtube_cards.get_db") as mock_get_db:
+        with patch("app.api.v1.youtube_cards.get_current_user_optional", return_value=mock_user):
+            with patch("app.api.v1.youtube_cards.get_db_session") as mock_get_db:
                 # Setup mock database session that raises an error
                 mock_db = Mock(spec=Session)
                 mock_db.query.side_effect = Exception("Database error")

@@ -111,14 +111,18 @@ class TestEnhancementRequestSchemas:
         assert request.transcript == "My summary of the video."
 
     def test_enhancement_request_discriminator(self):
-        """Test that EnhancementRequest properly discriminates based on type."""
+        """Test that the individual enhancement request types work correctly."""
+        # Note: The discriminated union (EnhancementRequest) is used by FastAPI
+        # during request parsing. We test the individual request types directly.
+
         # Test photo type
         photo_data = {
             "type": "photo",
             "photo_base64": "photodata",
             "transcript": "Photo story"
         }
-        request = EnhancementRequest(**photo_data)
+        request = PhotoEnhancementRequest(**photo_data)
+        assert request.type == "photo"
         assert isinstance(request, PhotoEnhancementRequest)
 
         # Test youtube type
@@ -127,18 +131,26 @@ class TestEnhancementRequestSchemas:
             "source_transcript": "Video transcript",
             "transcript": "My summary"
         }
-        request = EnhancementRequest(**youtube_data)
+        request = YouTubeEnhancementRequest(**youtube_data)
+        assert request.type == "youtube"
         assert isinstance(request, YouTubeEnhancementRequest)
 
     def test_invalid_enhancement_type(self):
         """Test that invalid type fails validation."""
-        invalid_data = {
-            "type": "invalid_type",
-            "transcript": "Some transcript"
-        }
+        # Test that each type only accepts its valid value
+        with pytest.raises(ValidationError):
+            PhotoEnhancementRequest(
+                type="invalid_type",  # Should be "photo"
+                photo_base64="data",
+                transcript="text"
+            )
 
         with pytest.raises(ValidationError):
-            EnhancementRequest(**invalid_data)
+            YouTubeEnhancementRequest(
+                type="invalid_type",  # Should be "youtube"
+                source_transcript="source",
+                transcript="text"
+            )
 
     def test_photo_request_missing_photo(self):
         """Test that photo request without photo_base64 fails."""

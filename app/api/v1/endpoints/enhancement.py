@@ -13,7 +13,6 @@ from app.core.database import get_db_session
 from app.core.auth import get_user_id_or_anonymous
 from app.models.enhancement import Enhancement, PromptTypeEnum
 from app.schemas.enhancement import (
-    LegacyEnhancementRequest,
     EnhancementTextResponse,
     EnhancementAudioResponse,
     EnhancementHistoryResponse,
@@ -21,14 +20,14 @@ from app.schemas.enhancement import (
     EnhancementSummary,
     PromptType
 )
-from app.schemas.youtube import PhotoEnhancementRequest, YouTubeEnhancementRequest
+from app.schemas.youtube import PhotoEnhancementRequest, YouTubeEnhancementRequest, EnhancementRequest
 
 router = APIRouter()
 
 
 @router.post("", response_model=EnhancementTextResponse)
 async def create_enhancement(
-    request: Union[PhotoEnhancementRequest, YouTubeEnhancementRequest, LegacyEnhancementRequest] = Body(...),
+    request: EnhancementRequest = Body(...),
     db: Session = Depends(get_db_session),
     user_id: str = Depends(get_user_id_or_anonymous)
 ):
@@ -46,7 +45,7 @@ async def create_enhancement(
         # Initialize Gemini service
         gemini_service = GeminiService()
 
-        # Handle different request types
+        # Handle different request types using discriminated union
         if isinstance(request, PhotoEnhancementRequest):
             # Photo enhancement flow
             enhancement_result = await gemini_service.enhance_story_with_photo(
@@ -72,19 +71,9 @@ async def create_enhancement(
             prompt_title = "YouTube Insight"
             source_photo_base64 = None
             source_transcript = request.source_transcript
-
         else:
-            # Legacy photo enhancement (backward compatibility)
-            enhancement_result = await gemini_service.enhance_story_with_photo(
-                photo_base64=request.photo_base64,
-                transcript=request.transcript,
-                language=request.language
-            )
-
-            prompt_type = PromptTypeEnum.PHOTO
-            prompt_title = "Photo Story"
-            source_photo_base64 = request.photo_base64
-            source_transcript = None
+            # This should never happen with proper discriminated union
+            raise HTTPException(status_code=400, detail="Invalid enhancement type")
 
         # Save to database
         try:
