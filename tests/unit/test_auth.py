@@ -66,7 +66,10 @@ class TestCoreAuth:
                 await get_current_user_required(credentials=mock_credentials, db=mock_db)
             assert exc_info.value.status_code == 401
             # The actual error message depends on which exception is caught
-            assert exc_info.value.detail in ["Invalid authentication credentials", "Authentication failed"]
+            # Check that detail is now a dict with error and message fields
+            assert isinstance(exc_info.value.detail, dict)
+            assert exc_info.value.detail.get("error") == "UNAUTHORIZED"
+            assert exc_info.value.detail.get("message") in ["Invalid authentication credentials", "Authentication failed"]
 
     @pytest.mark.asyncio
     async def test_get_current_user_required_with_valid_token(self):
@@ -95,7 +98,10 @@ class TestCoreAuth:
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user_required(credentials=mock_credentials, db=mock_db)
             assert exc_info.value.status_code == 401
-            assert "Could not validate credentials" in exc_info.value.detail
+            # Check that detail is now a dict with error and message fields
+            assert isinstance(exc_info.value.detail, dict)
+            assert exc_info.value.detail.get("error") == "UNAUTHORIZED"
+            assert exc_info.value.detail.get("message") == "Could not validate credentials"
 
     @pytest.mark.asyncio
     async def test_verify_jwt_token_valid(self):
@@ -220,7 +226,10 @@ class TestCoreAuth:
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user_required(credentials=mock_credentials, db=mock_db)
             assert exc_info.value.status_code == 401
-            assert "Authentication failed" in exc_info.value.detail
+            # Check that detail is now a dict with error and message fields
+            assert isinstance(exc_info.value.detail, dict)
+            assert exc_info.value.detail.get("error") == "UNAUTHORIZED"
+            assert exc_info.value.detail.get("message") == "Authentication failed"
 
     @pytest.mark.asyncio
     async def test_verify_jwt_token_wrong_algorithm(self):

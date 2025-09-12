@@ -37,15 +37,17 @@ class TestHealthEndpoints:
         """Test detailed health check endpoint."""
         response = client.get("/api/v1/health/detailed")
 
-        assert response.status_code == status.HTTP_200_OK
+        # Can be 200 (ready) or 503 (not ready) depending on services
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_503_SERVICE_UNAVAILABLE]
         data = response.json()
 
-        # Detailed endpoint should return more information
-        assert data["status"] == "healthy"
-        assert "service" in data
-        assert data["service"] == "amplify-backend"
-        assert "version" in data
-        assert "uptime" in data
+        # Should match ReadinessResponse schema
+        assert "status" in data
+        assert data["status"] in ["ready", "not_ready"]
+        assert "services" in data
+        assert "gemini" in data["services"]
+        assert "tts" in data["services"]
+        assert "database" in data["services"]
 
     def test_readiness_check_endpoint(self, client):
         """Test readiness check endpoint (if implemented)."""
@@ -120,11 +122,12 @@ class TestHealthEndpoints:
 
         # Test detailed health check for more comprehensive monitoring
         response = client.get("/api/v1/health/detailed")
-        assert response.status_code == status.HTTP_200_OK
+        # Can be 200 or 503 depending on service readiness
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_503_SERVICE_UNAVAILABLE]
 
         data = response.json()
         assert isinstance(data, dict)
-        assert len(data) >= 3  # Should have status, service, version at minimum
+        assert len(data) >= 2  # Should have status and services at minimum
 
     def test_health_check_database_independent(self, client):
         """Test that health check works even if database is unavailable."""

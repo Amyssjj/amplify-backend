@@ -2,7 +2,8 @@
 YouTube cards endpoint for fetching curated video clips.
 """
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
+from app.core.errors import internal_server_error
 from sqlalchemy.orm import Session
 import logging
 
@@ -47,7 +48,4 @@ async def get_youtube_cards(
         ]
     except Exception as e:
         logger.error(f"Error fetching YouTube cards: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch YouTube cards"
-        )
+        raise internal_server_error("Failed to fetch YouTube cards")

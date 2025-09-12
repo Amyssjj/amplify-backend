@@ -213,16 +213,18 @@ class TestOpenAPISpecCompliance:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         data = response.json()
 
-        # Should have error structure
-        assert "detail" in data
+        # Should match ValidationErrorResponse schema
+        assert "error" in data
+        assert data["error"] == "VALIDATION_ERROR"
+        assert "message" in data
+        assert "validation_errors" in data
+        assert isinstance(data["validation_errors"], list)
 
-        # Detail should be a list of validation errors
-        assert isinstance(data["detail"], list)
-        if data["detail"]:
-            error = data["detail"][0]
-            assert "loc" in error
-            assert "msg" in error
-            assert "type" in error
+        # Each validation error should have field and message
+        if data["validation_errors"]:
+            error = data["validation_errors"][0]
+            assert "field" in error
+            assert "message" in error
 
     def test_path_parameters_validation(self, client):
         """Test path parameter validation matches OpenAPI spec."""

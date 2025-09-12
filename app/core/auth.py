@@ -1,7 +1,8 @@
 """
 Authentication utilities and dependencies for FastAPI.
 """
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, status
+from app.core.errors import unauthorized_error
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -30,7 +31,7 @@ async def get_current_user_optional(
     """
     if not credentials:
         return None
-    
+
     try:
         return await verify_jwt_token(credentials.credentials, db)
     except Exception:
@@ -49,37 +50,34 @@ async def get_current_user_required(
     try:
         user = await verify_jwt_token(credentials.credentials, db)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"},
+            raise unauthorized_error(
+                "Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
             )
         return user
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+        raise unauthorized_error(
+            "Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"}
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed",
-            headers={"WWW-Authenticate": "Bearer"},
+        raise unauthorized_error(
+            "Authentication failed",
+            headers={"WWW-Authenticate": "Bearer"}
         )
 
 
 async def verify_jwt_token(token: str, db: Session) -> Optional[User]:
     """
     Verify JWT token and return user.
-    
+
     Args:
         token: JWT token string
         db: Database session
-        
+
     Returns:
         User model instance or None if invalid
-        
+
     Raises:
         JWTError: If token is invalid
     """
@@ -87,14 +85,14 @@ async def verify_jwt_token(token: str, db: Session) -> Optional[User]:
         # Decode the JWT token
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         user_id = payload.get("sub")
-        
+
         if user_id is None:
             return None
-        
+
         # Get user from database
         user = db.query(User).filter(User.user_id == user_id).first()
         return user
-        
+
     except JWTError:
         raise
     except Exception:

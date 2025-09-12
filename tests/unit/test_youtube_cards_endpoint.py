@@ -158,7 +158,10 @@ class TestYouTubeCardsEndpoint:
 
             # Should handle the error gracefully
             assert response.status_code == 500
-            assert response.json()["detail"] == "Failed to fetch YouTube cards"
+            # Check that error response is now structured with error and message fields
+            error_response = response.json()
+            assert error_response.get("detail", {}).get("error") == "INTERNAL_ERROR"
+            assert error_response.get("detail", {}).get("message") == "Failed to fetch YouTube cards"
 
         # Clean up overrides
         app.dependency_overrides.clear()

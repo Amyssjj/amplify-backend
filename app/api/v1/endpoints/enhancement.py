@@ -5,6 +5,7 @@ Two-stage flow: POST creates enhancement (text), GET retrieves audio.
 import uuid
 from typing import Union
 from fastapi import APIRouter, HTTPException, Query, Path, Depends, Body
+from app.core.errors import not_found_error, service_unavailable_error, internal_server_error
 from sqlalchemy.orm import Session
 
 from app.services.gemini_service import GeminiService, GeminiError
@@ -110,18 +111,18 @@ async def create_enhancement(
         # Handle specific Gemini service errors
         print(f"❌ GeminiError: {e}")
         if "API key" in str(e):
-            raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+            raise service_unavailable_error("AI service")
         elif "rate limit" in str(e).lower():
             raise HTTPException(status_code=429, detail="Too many requests, please try again later")
         else:
-            raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+            raise service_unavailable_error("AI service")
 
     except Exception as e:
         print(f"❌ Enhancement error: {e}")
         print(f"❌ Error type: {type(e)}")
         import traceback
         print(f"❌ Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise internal_server_error(str(e))
 
 
 @router.get("", response_model=EnhancementHistoryResponse)
@@ -194,7 +195,7 @@ async def get_enhancement_by_id(
         ).first()
 
         if not enhancement:
-            raise HTTPException(status_code=404, detail="Enhancement not found")
+            raise not_found_error("Enhancement")
 
         return EnhancementDetails(
             enhancement_id=enhancement.enhancement_id,
@@ -215,7 +216,7 @@ async def get_enhancement_by_id(
         raise
     except Exception as e:
         print(f"❌ Error fetching enhancement {enhancement_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise internal_server_error()
 
 
 @router.get("/{enhancement_id}/audio", response_model=EnhancementAudioResponse)
@@ -238,7 +239,7 @@ async def get_enhancement_audio(
         ).first()
 
         if not enhancement:
-            raise HTTPException(status_code=404, detail="Enhancement not found")
+            raise not_found_error("Enhancement")
 
         # Initialize TTS service
         tts_service = TTSService()
@@ -267,7 +268,7 @@ async def get_enhancement_audio(
         raise
     except TTSError as e:
         print(f"❌ TTS error: {e}")
-        raise HTTPException(status_code=503, detail="TTS service unavailable")
+        raise service_unavailable_error("TTS service")
     except Exception as e:
         print(f"❌ Audio generation error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise internal_server_error()

@@ -21,10 +21,18 @@ class TestTTSService:
 
     def test_init_with_elevenlabs_client(self):
         """Test initialization with ElevenLabs client."""
+        # Skip if elevenlabs is not installed
+        try:
+            import elevenlabs.client
+        except ImportError:
+            pytest.skip("elevenlabs library not installed")
+
         mock_elevenlabs = Mock()
 
         with patch('app.services.tts_service.ELEVENLABS_AVAILABLE', True):
             with patch('app.services.tts_service.settings.elevenlabs_api_key', 'test-key'):
+                # Patch ElevenLabs where it's imported in tts_service module
+                # The import happens at module level, so we need to patch it there
                 with patch('app.services.tts_service.ElevenLabs', return_value=mock_elevenlabs):
                     service = TTSService()
                     assert service.elevenlabs_client == mock_elevenlabs

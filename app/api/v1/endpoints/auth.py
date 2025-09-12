@@ -2,6 +2,7 @@
 Authentication endpoints - Google OAuth only.
 """
 from fastapi import APIRouter, HTTPException, status, Depends
+from app.core.errors import unauthorized_error, service_unavailable_error, internal_server_error
 from sqlalchemy.orm import Session
 
 from app.schemas.auth import GoogleAuthRequest, AuthResponse
@@ -46,18 +47,12 @@ async def google_auth(request: GoogleAuthRequest, db: Session = Depends(get_db_s
                 detail="Invalid Google ID token"
             )
         elif "verification failed" in str(e).lower():
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Google authentication failed"
-            )
+            raise unauthorized_error("Google authentication failed")
         else:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Authentication service temporarily unavailable"
-            )
+            raise service_unavailable_error("Authentication service")
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
         print(f"❌ Google auth error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise internal_server_error()
